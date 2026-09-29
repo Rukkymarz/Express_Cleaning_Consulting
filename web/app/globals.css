@@ -1,0 +1,13 @@
+@import "tailwindcss";
+@theme {
+  --color-ocean: #0B8B77;
+  --color-ocean-bright: #00A88F;
+  --color-platinum: #E5E9F0;
+  --color-platinum-dark: #D8DEE9;
+  --color-ink: #1E293B;
+  --color-canvas: #FAFAFA;
+}
+html { scroll-behavior: smooth; }
+body { background: #FAFAFA; color: #1E293B; }
+:focus-visible { outline: 3px solid #0B8B77; outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; } }

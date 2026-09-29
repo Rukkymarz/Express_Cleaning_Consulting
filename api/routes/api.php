@@ -1,0 +1,55 @@
+<?php
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\BookingController;
+use App\Http\Controllers\CampaignController;
+use App\Http\Controllers\CrmController;
+use App\Http\Controllers\LeadController;
+use App\Http\Controllers\InvoiceController;
+use App\Http\Controllers\ServicePlanController;
+use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\QuoteController;
+use App\Http\Controllers\RequestController;
+use App\Http\Controllers\VoiceController;
+use Illuminate\Support\Facades\Route;
+
+Route::prefix('v1')->group(function () {
+    Route::get('/catalog',[RequestController::class,'catalog']);
+    Route::post('/requests',[RequestController::class,'store'])->middleware('throttle:10,1');
+    Route::post('/quotes/preview',[RequestController::class,'preview'])->middleware('throttle:20,1');
+    Route::post('/webhooks/stripe',[PaymentController::class,'webhook']);
+    Route::post('/webhooks/twilio/voice',[VoiceController::class,'outbound']);
+    Route::post('/call-center/voice',[VoiceController::class,'outbound']);
+    Route::post('/webhooks/twilio/incoming',[VoiceController::class,'incoming']);
+    Route::post('/webhooks/twilio/status',[VoiceController::class,'status']);
+    Route::post('/webhooks/twilio/message',[VoiceController::class,'incomingMessage']);
+    Route::post('/auth/register',[AuthController::class,'register'])->middleware('throttle:5,1');
+    Route::post('/auth/login',[AuthController::class,'login'])->middleware('throttle:10,1');
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::post('/auth/logout',[AuthController::class,'logout']);
+        Route::get('/account/bookings',[CrmController::class,'accountBookings']);
+        Route::get('/account/bookings/{publicId}',[CrmController::class,'accountBooking']);
+        Route::get('/account/bookings/{bookingId}/payments',[CrmController::class,'invoices']);
+        Route::get('/account/bookings/{bookingId}/invoice.pdf',[InvoiceController::class,'download']);
+        Route::get('/account/plans',[ServicePlanController::class,'index']);
+        Route::post('/account/plans/{publicId}/change-requests',[ServicePlanController::class,'requestChange']);
+        Route::post('/quotes/{quoteId}/accept',[QuoteController::class,'accept']);
+        Route::post('/payments/intents',[PaymentController::class,'intent']);
+        Route::middleware('permission:leads.view')->get('/admin/leads',[LeadController::class,'index']);
+        Route::middleware('permission:leads.view')->get('/admin/leads/{id}',[LeadController::class,'show']);
+        Route::middleware('permission:leads.view')->get('/admin/agents',[LeadController::class,'agents']);
+        Route::middleware('permission:leads.edit')->patch('/admin/leads/{id}',[LeadController::class,'update']);
+        Route::middleware('permission:leads.edit')->patch('/admin/leads/{id}/assignment',[LeadController::class,'assign']);
+        Route::middleware('permission:quotes.issue')->post('/admin/requests/{serviceRequestId}/quotes',[QuoteController::class,'issue']);
+        Route::middleware('permission:bookings.dispatch')->post('/admin/quotes/{quoteId}/booking',[QuoteController::class,'prepareBooking']);
+        Route::middleware('permission:bookings.dispatch')->post('/admin/bookings/{id}/transition',[BookingController::class,'transition']);
+        Route::middleware('permission:bookings.dispatch')->post('/admin/bookings/{bookingId}/plan',[ServicePlanController::class,'createFromBooking']);
+        Route::middleware('permission:bookings.dispatch')->post('/admin/plan-requests/{changeId}/resolve',[ServicePlanController::class,'resolve']);
+        Route::middleware('permission:calls.place')->get('/agent/voice-token',[VoiceController::class,'token']);
+        Route::middleware('permission:calls.place')->get('/call-center/token',[VoiceController::class,'token']);
+        Route::middleware('permission:calls.place')->post('/agent/presence',[VoiceController::class,'presence']);
+        Route::middleware('permission:calls.place')->get('/agent/calls',[VoiceController::class,'list']);
+        Route::middleware('permission:calls.place')->post('/admin/calls/{id}/notes',[VoiceController::class,'note']);
+        Route::middleware('permission:campaigns.manage')->post('/admin/campaigns',[CampaignController::class,'create']);
+        Route::middleware('permission:campaigns.manage')->post('/admin/campaigns/{id}/approve',[CampaignController::class,'approve']);
+    });
+});

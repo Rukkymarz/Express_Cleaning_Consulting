@@ -1,0 +1,16 @@
+'use client';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { jsonRequest } from '@/lib/api';
+export default function LoginPage() {
+  const router=useRouter(); const [error,setError]=useState(''); const [busy,setBusy]=useState(false);
+  async function login(e:React.FormEvent<HTMLFormElement>) {
+    e.preventDefault(); setBusy(true); setError('');
+    const data=new FormData(e.currentTarget);
+    try { await jsonRequest('/auth/login',{method:'POST',body:JSON.stringify({email:data.get('email'),password:data.get('password')})}); router.push('/account'); }
+    catch(e) { setError(e instanceof Error?e.message:'Unable to sign in'); }
+    finally {setBusy(false);}
+  }
+  return <main className="mx-auto max-w-md px-5 py-14"><Link href="/" className="font-bold text-ocean underline">← Home</Link><h1 className="mt-10 text-3xl font-bold">Sign in</h1><p className="mt-2 text-slate-600">Access bookings associated with your account.</p><form onSubmit={login} className="mt-8 space-y-5"><div><label htmlFor="email" className="block font-semibold">Email</label><input id="email" name="email" type="email" required autoComplete="email" className="mt-2 w-full rounded-xl border border-platinum-dark p-3" /></div><div><label htmlFor="password" className="block font-semibold">Password</label><input id="password" name="password" type="password" required autoComplete="current-password" className="mt-2 w-full rounded-xl border border-platinum-dark p-3" /></div>{error&&<p role="alert" className="text-red-700">{error}</p>}<button disabled={busy} className="w-full rounded-xl bg-ocean p-3 font-bold text-white disabled:opacity-50">{busy?'Signing in…':'Sign in'}</button></form></main>;
+}
