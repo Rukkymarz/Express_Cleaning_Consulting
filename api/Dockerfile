@@ -7,7 +7,10 @@ FROM php:8.3-apache-bookworm
 RUN apt-get update && apt-get install -y --no-install-recommends libzip-dev libonig-dev libcurl4-openssl-dev unzip \
     && docker-php-ext-install pdo_mysql zip mbstring curl \
     && rm -rf /var/lib/apt/lists/* \
-    && a2enmod rewrite headers
+    && rm -f /etc/apache2/mods-enabled/mpm_event.load /etc/apache2/mods-enabled/mpm_event.conf \
+             /etc/apache2/mods-enabled/mpm_worker.load /etc/apache2/mods-enabled/mpm_worker.conf \
+    && a2enmod mpm_prefork rewrite headers \
+    && apache2ctl -t
 WORKDIR /var/www/html
 COPY . .
 COPY --from=deps /app/vendor ./vendor
