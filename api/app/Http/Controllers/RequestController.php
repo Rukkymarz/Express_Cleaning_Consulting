@@ -6,16 +6,22 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Carbon\CarbonImmutable;
 
 class RequestController extends Controller
 {
+    private const US_STATE_CODES = [
+        'AL','AK','AZ','AR','CA','CO','CT','DE','DC','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT',
+        'NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY',
+    ];
+
     private function rules(): array
     {
         return [
             'service_code' => 'required|string|max:32|exists:service_types,code',
             'address.street' => 'required|string|max:255', 'address.unit' => 'nullable|string|max:100',
-            'address.city' => 'required|string|max:100', 'address.region' => 'required|string|size:2',
+            'address.city' => 'required|string|max:100', 'address.region' => ['required','string',Rule::in(self::US_STATE_CODES)],
             'address.postal_code' => 'required|string|max:12', 'address.country' => 'required|string|size:2|in:US',
             'property.square_feet' => 'nullable|integer|min:1|max:1000000',
             'property.bedrooms' => 'nullable|integer|min:0|max:99', 'property.bathrooms' => 'nullable|integer|min:0|max:99',
