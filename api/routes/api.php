@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
     Route::get('/catalog',[RequestController::class,'catalog']);
+    Route::get('/requests/{requestId}/status',[RequestController::class,'status'])->whereUlid('requestId')->middleware('throttle:30,1');
     Route::post('/requests',[RequestController::class,'store'])->middleware('throttle:10,1');
     Route::post('/quotes/preview',[RequestController::class,'preview'])->middleware('throttle:20,1');
     Route::post('/webhooks/stripe',[PaymentController::class,'webhook']);
@@ -39,7 +40,9 @@ Route::prefix('v1')->group(function () {
         Route::middleware('permission:leads.view')->get('/admin/agents',[LeadController::class,'agents']);
         Route::middleware('permission:leads.edit')->patch('/admin/leads/{id}',[LeadController::class,'update']);
         Route::middleware('permission:leads.edit')->patch('/admin/leads/{id}/assignment',[LeadController::class,'assign']);
+        Route::middleware('permission:leads.edit')->patch('/admin/tasks/{publicId}',[LeadController::class,'updateTask']);
         Route::middleware('permission:quotes.issue')->post('/admin/requests/{serviceRequestId}/quotes',[QuoteController::class,'issue']);
+        Route::middleware('permission:quotes.issue')->post('/admin/bookings/{bookingId}/payment-invoices',[PaymentController::class,'testInvoice']);
         Route::middleware('permission:bookings.dispatch')->post('/admin/quotes/{quoteId}/booking',[QuoteController::class,'prepareBooking']);
         Route::middleware('permission:bookings.dispatch')->post('/admin/bookings/{id}/transition',[BookingController::class,'transition']);
         Route::middleware('permission:bookings.dispatch')->post('/admin/bookings/{bookingId}/plan',[ServicePlanController::class,'createFromBooking']);

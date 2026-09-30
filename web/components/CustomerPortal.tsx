@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { API_URL, jsonRequest } from '@/lib/api';
+import { jsonRequest } from '@/lib/api';
 
 type Booking = { public_id:string; status:string; start_at:string; time_zone:string; balance_due_cents:number };
 type Plan = { id:number; public_id:string; frequency:string; status:string; next_service_on:string|null; booking_id:string };
@@ -50,7 +50,7 @@ export default function CustomerPortal() {
             <p className="mt-3 text-slate-600">{new Date(b.start_at).toLocaleString(undefined,{dateStyle:'medium',timeStyle:'short',timeZone:b.time_zone})} · {b.time_zone}</p>
             <p className="mt-2 text-sm">Balance: ${(Math.max(0,b.balance_due_cents)/100).toFixed(2)}</p>
             <div className="mt-4 flex flex-wrap gap-5 text-sm font-bold text-ocean">
-              <a href={`${API_URL}/account/bookings/${encodeURIComponent(b.public_id)}/invoice.pdf`} className="underline underline-offset-4">Download invoice PDF</a>
+              <a href={`/api/v1/account/bookings/${encodeURIComponent(b.public_id)}/invoice.pdf`} className="underline underline-offset-4">Download invoice PDF</a>
               {(b.status==='ready_for_payment'||(b.status==='completed'&&b.balance_due_cents>0))&&<Link href={`/account/pay/${b.public_id}`} className="underline underline-offset-4">Pay balance</Link>}
             </div>
           </li>)}</ul>}

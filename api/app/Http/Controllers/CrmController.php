@@ -8,14 +8,14 @@ use Illuminate\Support\Facades\DB;
 class CrmController extends Controller
 {
     public function accountBookings(Request $request) {
-        return response()->json(DB::table('bookings as b')->join('quotes as q','q.id','=','b.quote_id')->where('b.customer_id',$request->user()->id)->orderByDesc('b.id')->cursorPaginate(20, ['b.id','b.public_id','b.status','b.start_at','b.end_at','b.time_zone',DB::raw("q.total_cents - COALESCE((SELECT SUM(p.amount_cents - p.refunded_cents) FROM payments p WHERE p.booking_id=b.id AND p.status IN ('succeeded','partially_refunded')),0) AS balance_due_cents")]));
+        return response()->json(DB::table('bookings as b')->join('quotes as q','q.id','=','b.quote_id')->where('b.customer_id',$request->user()->id)->orderByDesc('b.id')->cursorPaginate(20, ['b.id','b.public_id','b.status','b.start_at','b.end_at','b.time_zone',DB::raw("q.total_cents - COALESCE((SELECT SUM(p.amount_cents - p.refunded_cents) FROM payments p WHERE p.booking_id=b.id AND p.environment='live' AND p.status IN ('succeeded','partially_refunded')),0) AS balance_due_cents")]));
     }
     public function accountBooking(Request $request, string $publicId) {
-        $booking=DB::table('bookings as b')->join('quotes as q','q.id','=','b.quote_id')->where('b.public_id',$publicId)->where('b.customer_id',$request->user()->id)->first(['b.public_id','b.status','q.total_cents','q.deposit_cents',DB::raw("q.total_cents - COALESCE((SELECT SUM(p.amount_cents - p.refunded_cents) FROM payments p WHERE p.booking_id=b.id AND p.status IN ('succeeded','partially_refunded')),0) AS balance_due_cents")]);
+        $booking=DB::table('bookings as b')->join('quotes as q','q.id','=','b.quote_id')->where('b.public_id',$publicId)->where('b.customer_id',$request->user()->id)->first(['b.public_id','b.status','q.total_cents','q.deposit_cents',DB::raw("q.total_cents - COALESCE((SELECT SUM(p.amount_cents - p.refunded_cents) FROM payments p WHERE p.booking_id=b.id AND p.environment='live' AND p.status IN ('succeeded','partially_refunded')),0) AS balance_due_cents"),DB::raw("(SELECT p.hosted_invoice_url FROM payments p WHERE p.booking_id=b.id AND p.environment='live' AND p.hosted_invoice_url IS NOT NULL ORDER BY p.id DESC LIMIT 1) AS hosted_invoice_url"),DB::raw("(SELECT p.status FROM payments p WHERE p.booking_id=b.id AND p.environment='live' ORDER BY p.id DESC LIMIT 1) AS payment_status"),DB::raw("(SELECT p.hosted_invoice_url FROM payments p WHERE p.booking_id=b.id AND p.environment='test' AND p.hosted_invoice_url IS NOT NULL ORDER BY p.id DESC LIMIT 1) AS test_hosted_invoice_url"),DB::raw("(SELECT p.status FROM payments p WHERE p.booking_id=b.id AND p.environment='test' ORDER BY p.id DESC LIMIT 1) AS test_payment_status")]);
         abort_unless($booking,404);return response()->json($booking);
     }
     public function invoices(Request $request, int $bookingId) {
         $booking=DB::table('bookings')->where('id',$bookingId)->where('customer_id',$request->user()->id)->first(); abort_unless($booking,404);
-        return response()->json(DB::table('payments')->where('booking_id',$bookingId)->get(['kind','status','amount_cents','currency','created_at']));
+        return response()->json(DB::table('payments')->where('booking_id',$bookingId)->get(['kind','environment','status','amount_cents','currency','created_at']));
     }
 }

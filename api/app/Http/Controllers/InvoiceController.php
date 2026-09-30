@@ -21,6 +21,7 @@ class InvoiceController extends Controller
         abort_unless($invoice,404);
         $items=DB::table('quote_items')->where('quote_id',$invoice->quote_id)->get(['description','quantity','unit_cents','total_cents']);
         $paid=(int)DB::table('payments')->where('booking_id',$invoice->booking_id)
+            ->where('environment','live')
             ->whereIn('status',['succeeded','partially_refunded'])
             ->selectRaw('COALESCE(SUM(amount_cents - refunded_cents),0) as paid')->value('paid');
         $safe=fn ($s)=>htmlspecialchars((string)$s,ENT_QUOTES|ENT_SUBSTITUTE,'UTF-8');

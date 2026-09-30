@@ -21,13 +21,19 @@ function responseMessage(body: unknown): string | undefined {
 export async function jsonRequest<T>(path: string, init: RequestInit = {}, options: JsonRequestOptions = {}): Promise<T> {
   const method = (init.method || 'GET').toUpperCase();
   const csrf = options.csrf !== false;
+  // Browser-authenticated requests use the web origin and Next's API rewrite,
+  // so Sanctum cookies remain first-party on the custom domain. Public quote
+  // calls intentionally keep using the stateless API origin with csrf:false.
+  const sameOriginSession = csrf && typeof window !== 'undefined';
+  const requestBase = sameOriginSession ? '/api/v1' : API_URL;
   try {
     if (csrf && !['GET','HEAD','OPTIONS'].includes(method)) {
-      const csrfResponse = await fetch(`${new URL(API_URL).origin}/sanctum/csrf-cookie`, { credentials: 'include', cache: 'no-store' });
+      const csrfUrl = sameOriginSession ? '/sanctum/csrf-cookie' : `${new URL(API_URL).origin}/sanctum/csrf-cookie`;
+      const csrfResponse = await fetch(csrfUrl, { credentials: 'include', cache: 'no-store' });
       if (!csrfResponse.ok) throw new Error('We could not start a secure session. Please refresh and try again.');
     }
     const xsrf = csrf && typeof document !== 'undefined' ? document.cookie.split('; ').find(c=>c.startsWith('XSRF-TOKEN='))?.split('=')[1] || '' : '';
-    const response = await fetch(`${API_URL}${path}`, {
+    const response = await fetch(`${requestBase}${path}`, {
       ...init,
       headers: { 'Content-Type': 'application/json', ...(xsrf ? { 'X-XSRF-TOKEN': decodeURIComponent(xsrf) } : {}), ...init.headers },
       credentials: init.credentials ?? (csrf ? 'include' : 'omit'),

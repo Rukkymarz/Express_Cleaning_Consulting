@@ -2,9 +2,11 @@
 namespace App\Http\Controllers;
 
 use App\Services\PricingService;
+use App\Services\QuoteNotificationDispatcher;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Carbon\CarbonImmutable;
@@ -55,19 +57,40 @@ class RequestController extends Controller
         return response()->json($pricing->preview($data));
     }
 
-    public function store(Request $request): \Illuminate\Http\JsonResponse
+    public function status(string $requestId): \Illuminate\Http\JsonResponse
+    {
+        $workflow = DB::table('service_requests as sr')
+            ->join('staff_tasks as task', function ($join) {
+                $join->on('task.service_request_id', '=', 'sr.id')->where('task.kind', '=', 'quote_review');
+            })
+            ->join('quote_request_notifications as notification', 'notification.service_request_id', '=', 'sr.id')
+            ->where('sr.public_id', $requestId)
+            ->first([
+                'sr.public_id as request_id', 'sr.status as request_status',
+                'task.status as task_status', 'notification.status as notification_status',
+            ]);
+        abort_unless($workflow, 404);
+        return response()->json($workflow);
+    }
+
+    public function store(Request $request, QuoteNotificationDispatcher $notifications): \Illuminate\Http\JsonResponse
     {
         $data = $request->validate($this->rules());
         $key = $request->header('Idempotency-Key');
         abort_unless($key && strlen($key) <= 120, 422, 'Idempotency-Key required');
         // A unique key is scoped to this endpoint; replay returns the original receipt.
-        $receipt = DB::transaction(function () use ($data, $key, $request) {
+        $result = DB::transaction(function () use ($data, $key, $request) {
             $now = now();
             $inserted = DB::table('provider_events')->insertOrIgnore(['provider' => 'public_request', 'event_id' => $key, 'event_type' => 'request.created', 'created_at' => $now, 'updated_at' => $now]);
             $receiptEvent = DB::table('provider_events')->where('provider', 'public_request')->where('event_id', $key)->lockForUpdate()->first();
             if (!$inserted) {
                 $publicId = DB::table('audit_events')->where('entity_type', 'request_receipt')->where('entity_id', $receiptEvent->id)->value('action');
-                return ['request_id' => $publicId, 'status' => 'received', 'next_step' => 'scope_review'];
+                $serviceRequestId = DB::table('service_requests')->where('public_id', $publicId)->value('id');
+                return [
+                    'receipt' => ['request_id' => $publicId, 'status' => 'received', 'next_step' => 'scope_review'],
+                    'created' => false,
+                    'service_request_id' => (int) $serviceRequestId,
+                ];
             }
             $service = DB::table('service_types')->where('code', $data['service_code'])->where('request_enabled', true)->where('published',true)->where('category','!=','Add-on')->first();
             abort_unless($service, 422, 'Service unavailable for requests');
@@ -82,9 +105,67 @@ class RequestController extends Controller
             foreach (['transactional_sms','marketing_email','marketing_sms','review_email'] as $channel) DB::table('consents')->insert(['lead_id' => $leadId, 'channel' => $channel, 'granted' => $data['consent'][$channel], 'source' => 'booking_wizard', 'policy_version' => '2026-09', 'recorded_at' => $now, 'created_at' => $now, 'updated_at' => $now]);
             DB::table('provider_events')->where('id',$receiptEvent->id)->update(['processed_at'=>$now]);
             DB::table('audit_events')->insert(['actor_id' => $request->user()?->id, 'entity_type' => 'request_receipt', 'entity_id' => $receiptEvent->id, 'action' => $publicId, 'created_at' => $now, 'updated_at' => $now]);
+            $taskId = DB::table('staff_tasks')->insertGetId([
+                'public_id' => (string) Str::ulid(),
+                'service_request_id' => $serviceRequestId,
+                'kind' => 'quote_review',
+                'status' => 'open',
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+            DB::table('quote_request_notifications')->insert([
+                'service_request_id' => $serviceRequestId,
+                'staff_task_id' => $taskId,
+                'status' => 'queued',
+                'payload' => json_encode([
+                    'receipt' => $publicId,
+                    'customer_name' => $data['contact']['name'],
+                    'email' => $data['contact']['email'],
+                    'phone' => $data['contact']['phone'],
+                    'service' => $service->name,
+                    'location' => $data['address']['street']
+                        .(!empty($data['address']['unit']) ? ', '.$data['address']['unit'] : '')
+                        .', '.$data['address']['city'].', '.strtoupper($data['address']['region']).' '.$data['address']['postal_code'],
+                    'task_status' => 'open',
+                    'review_url' => config('services.quote_notifications.review_url'),
+                ], JSON_THROW_ON_ERROR),
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
             app(\App\Services\LeadService::class)->sync($leadId);
-            return ['request_id' => $publicId, 'status' => 'received', 'next_step' => 'scope_review'];
+            return [
+                'receipt' => ['request_id' => $publicId, 'status' => 'received', 'next_step' => 'scope_review'],
+                'created' => true,
+                'service_request_id' => $serviceRequestId,
+            ];
         });
-        return response()->json($receipt, 202);
+
+        // The database queue makes provider work durable without delaying the public receipt.
+        if ($result['created']) {
+            try {
+                $notifications->dispatch($result['service_request_id']);
+            } catch (\Throwable $error) {
+                // The notification outbox row remains queued for the recovery process.
+                Log::error('Quote notification could not be queued and will be recovered.', [
+                    'service_request_id' => $result['service_request_id'],
+                    'exception_class' => $error::class,
+                ]);
+                report($error);
+            }
+        }
+
+        $workflow = DB::table('staff_tasks as t')
+            ->join('quote_request_notifications as n', 'n.staff_task_id', '=', 't.id')
+            ->where('t.service_request_id', $result['service_request_id'])
+            ->where('t.kind', 'quote_review')
+            ->first(['t.status as task_status', 'n.status as notification_status']);
+
+        return response()->json([
+            ...$result['receipt'],
+            'workflow' => [
+                'task_status' => $workflow?->task_status,
+                'notification_status' => $workflow?->notification_status,
+            ],
+        ], 202);
     }
 }

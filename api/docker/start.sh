@@ -7,4 +7,4 @@ a2enmod mpm_prefork >/dev/null
 printf 'Listen %s\n' "$PORT" > /etc/apache2/ports.conf
 sed -i "s/<VirtualHost \*:8080>/<VirtualHost *:$PORT>/" /etc/apache2/sites-available/000-default.conf
 apache2ctl -t
-exec apache2-foreground
+exec /usr/bin/supervisord -n -c /etc/supervisor/supervisord.conf
