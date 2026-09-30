@@ -19,7 +19,7 @@ class AuthController extends Controller
         $v=$request->validate(['email'=>'required|email','password'=>'required|string']);
         if (!Auth::attempt($v)) return response()->json(['error'=>['code'=>'invalid_credentials','message'=>'Email or password is incorrect.']], 422);
         $request->session()->regenerate();
-        return response()->json(['user'=>$request->user()->only('id','name','email')]);
+        return response()->json(['user'=>$request->user()->only('id','name','email'), 'redirect_to'=>$request->user()->can('leads.view') ? '/admin' : '/account']);
     }
     public function logout(Request $request) { Auth::logout(); $request->session()->invalidate(); $request->session()->regenerateToken(); return response()->noContent(); }
 }
