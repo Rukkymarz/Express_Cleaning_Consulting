@@ -1,7 +1,7 @@
 import type { MetadataRoute } from 'next';
 import { API_URL } from '@/lib/api';
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const origin = (process.env.NEXT_PUBLIC_SITE_URL || 'https://www.expresscleaningconsult.com').replace(/\/$/, '');
+  const origin = 'https://www.expresscleaningconsult.com';
   const base: MetadataRoute.Sitemap = [{url:origin,changeFrequency:'weekly',priority:1},{url:`${origin}/book`,changeFrequency:'monthly',priority:.8}];
   try {
     const r=await fetch(`${API_URL}/catalog`,{cache:'no-store'}); if(!r.ok) return base;
