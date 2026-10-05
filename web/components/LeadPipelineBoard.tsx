@@ -1,5 +1,5 @@
 'use client';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { jsonRequest } from '@/lib/api';
 
@@ -14,12 +14,18 @@ export default function LeadPipelineBoard() {
   const [stage,setStage]=useState<Stage>('quote_requested');
   const [leads,setLeads]=useState<Lead[]>([]),[agents,setAgents]=useState<Agent[]>([]);
   const [cursor,setCursor]=useState<string|null>(null),[search,setSearch]=useState(''),[error,setError]=useState(''),[notice,setNotice]=useState(''),[loading,setLoading]=useState(true);
+  const requestSequence=useRef(0);
+  const [searchTerm,setSearchTerm]=useState('');
+  useEffect(()=>{const timer=window.setTimeout(()=>setSearchTerm(search),250);return()=>window.clearTimeout(timer);},[search]);
   const fetchPage=useCallback(async (next?:string) => {
-    const query=new URLSearchParams({stage});if(search.trim())query.set('search',search.trim());if(next)query.set('cursor',next);
+    const requestId=++requestSequence.current;
+    const query=new URLSearchParams({stage});if(searchTerm.trim())query.set('search',searchTerm.trim());if(next)query.set('cursor',next);
     const result=await jsonRequest<{data:Lead[];next_cursor:string|null}>(`/admin/leads?${query}`);
+    if(requestId!==requestSequence.current)return;
+    setError('');
     setLeads(old=>next?[...old,...result.data]:result.data);setCursor(result.next_cursor);
-  },[stage,search]);
-  useEffect(()=>{setLoading(true);Promise.all([fetchPage(),jsonRequest<Agent[]>('/admin/agents').then(setAgents)]).catch(e=>setError(e.message)).finally(()=>setLoading(false));},[fetchPage]);
+  },[stage,searchTerm]);
+  useEffect(()=>{let active=true;setLoading(true);setError('');Promise.all([fetchPage(),jsonRequest<Agent[]>('/admin/agents').then(result=>{if(active)setAgents(result);})]).catch(e=>{if(active)setError(e.message);}).finally(()=>{if(active)setLoading(false);});return()=>{active=false;requestSequence.current++;};},[fetchPage]);
   useEffect(()=>{const timer=window.setInterval(()=>{if(document.visibilityState==='visible')fetchPage().catch(()=>{});},15000);return()=>clearInterval(timer);},[fetchPage]);
   async function assign(id:number,agent_id:number) {
     setError('');setNotice('');
@@ -41,7 +47,7 @@ export default function LeadPipelineBoard() {
     <div className="mt-7 flex flex-wrap items-end gap-3"><div><label htmlFor="lead-search" className="block text-sm font-semibold">Search this stage</label><input id="lead-search" value={search} onChange={e=>setSearch(e.target.value)} placeholder="Name, email, phone or receipt" className="mt-2 rounded-xl border border-platinum-dark bg-white p-3" /></div><Link href="/admin/calls" className="rounded-xl border border-ocean px-5 py-3 font-bold text-ocean">Call leads</Link></div>
     <p className="mt-3 text-sm text-slate-600">Score ranks follow-up work from contact and request details; it is not a conversion probability.</p>
     {notice&&<p role="status" className="mt-4 text-ocean">{notice}</p>}{error&&<p role="alert" className="mt-4 text-red-700">{error} <Link href="/login" className="underline">Sign in if needed</Link></p>}
-    {loading?<p role="status" className="mt-8">Loading leads…</p>:leads.length===0?<p className="mt-8 rounded-2xl border border-platinum bg-white p-7">No leads in this stage.</p>:
+    {loading?<p role="status" className="mt-8">Loading leads…</p>:error?<button onClick={()=>{setLoading(true);fetchPage().catch(e=>setError(e.message)).finally(()=>setLoading(false));}} className="mt-6 rounded-xl border border-ocean px-5 py-3 font-bold text-ocean">Retry loading leads</button>:leads.length===0?<p className="mt-8 rounded-2xl border border-platinum bg-white p-7">No leads in this stage.</p>:
       <ul className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">{leads.map(lead=><li key={lead.id} className="rounded-2xl border border-platinum bg-white p-6">
         <div className="flex justify-between gap-3"><div><h2 className="text-lg font-bold">{lead.name}</h2><p className="mt-1 break-all text-sm text-slate-600">{lead.email||'Email pending'}</p><p className="mt-1 text-sm text-slate-600">{lead.phone||'Phone pending'}</p></div><span className="h-fit rounded-lg bg-[#EAF5F2] px-3 py-2 text-sm font-bold text-ocean">{lead.lead_score}/100</span></div>
         {lead.request_receipt&&<div className="mt-5 rounded-xl border border-platinum bg-canvas p-4 text-sm"><p><span className="font-semibold">Receipt:</span> <span className="break-all">{lead.request_receipt}</span></p><p className="mt-2"><span className="font-semibold">Service:</span> {lead.service_name||'Not available'}</p><p className="mt-2"><span className="font-semibold">Location:</span> {[lead.street,lead.unit,lead.city,lead.region,lead.postal_code].filter(Boolean).join(', ')}</p><p className="mt-2"><span className="font-semibold">Review task:</span> {lead.task_status?.replaceAll('_',' ')||'Not created'}</p><p className="mt-2"><span className="font-semibold">Email notice:</span> {lead.notification_status?.replaceAll('_',' ')||'Not created'}</p></div>}
