@@ -7,6 +7,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(site),
   title: { default: title, template: '%s | Express Cleaning Consult' },
   description,
+  verification: { google: 'WR9Y9dsqLXeL2A4_A6sAe9vHV6-qHtWJet2KVezVBys' },
   applicationName: 'Express Cleaning Consult',
   openGraph: { type: 'website', locale: 'en_US', siteName: 'Express Cleaning Consult', title, description },
   twitter: { card: 'summary_large_image', title, description },
