@@ -1,2 +1,2 @@
-import SoftphoneConsole from '@/components/SoftphoneConsole';
-export default function CallsPage() { return <SoftphoneConsole />; }
+import Link from 'next/link';
+export default function CallsPage(){return <main className="mx-auto max-w-3xl px-5 py-14"><Link href="/admin" className="font-bold text-ocean underline">← Lead pipeline</Link><h1 className="mt-8 text-3xl font-bold">Calling leads</h1><p className="mt-4 text-slate-600">Browser calling is disabled. Open a lead and select its phone number to call with your phone or installed calling app.</p></main>;}
