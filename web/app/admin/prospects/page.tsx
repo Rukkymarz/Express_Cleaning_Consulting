@@ -1,0 +1,4 @@
+import Link from 'next/link';
+import IncomingLeadSheet from '@/components/IncomingLeadSheet';
+import ProspectBoard from '@/components/ProspectBoard';
+export default function ProspectsPage(){return <main className="mx-auto max-w-7xl px-5 py-9"><Link href="/" className="font-bold text-ocean underline">Express Cleaning Consult</Link><nav aria-label="Admin tools" className="mt-6 flex flex-wrap gap-3"><Link href="/admin" className="rounded-xl border border-ocean px-5 py-3 font-bold text-ocean">Lead pipeline</Link><Link href="/admin/prospects" aria-current="page" className="rounded-xl bg-ocean px-5 py-3 font-bold text-white">Lead generation</Link></nav><h1 className="mt-10 text-4xl font-bold">Lead generation</h1><p className="mt-3 text-slate-600">Organize residential and commercial prospects, record outreach, and plan Christine&apos;s daily follow-ups.</p><IncomingLeadSheet/><ProspectBoard/></main>;}
