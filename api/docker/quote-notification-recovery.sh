@@ -3,5 +3,6 @@ set -u
 
 while true; do
     php artisan quote-notifications:recover --limit=50 || true
+    php artisan prospects:remind || true
     sleep 60
 done
