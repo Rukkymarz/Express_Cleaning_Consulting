@@ -8,6 +8,8 @@ export const services = [
   { code: 'COMM-OFF', name: 'Office cleaning', description: 'One-time and recurring office cleaning requests.' },
   { code: 'JANITORIAL', name: 'Janitorial services', description: 'Scheduled cleaning for facilities and common spaces.' },
   { code: 'POST-CON', name: 'Post-construction', description: 'Scoped dust and finish cleaning after renovation.' },
+  { code: 'JUNK', name: 'Junk removal', description: 'Request removal of unwanted items. We confirm access, hauling scope and disposal before quoting.' },
+  { code: 'PRESSURE', name: 'Pressure washing', description: 'Request an exterior clean. We review the surface, condition and access before quoting.' },
   { code: 'AUTO', name: 'Vehicle cleaning', description: 'Tell us about your vehicle and desired cleaning scope.' },
 ] as const;
 export const extras = [

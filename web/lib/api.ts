@@ -35,14 +35,17 @@ export async function jsonRequest<T>(path: string, init: RequestInit = {}, optio
     const xsrf = csrf && typeof document !== 'undefined' ? document.cookie.split('; ').find(c=>c.startsWith('XSRF-TOKEN='))?.split('=')[1] || '' : '';
     const response = await fetch(`${requestBase}${path}`, {
       ...init,
-      headers: { 'Content-Type': 'application/json', ...(xsrf ? { 'X-XSRF-TOKEN': decodeURIComponent(xsrf) } : {}), ...init.headers },
+      headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', ...(xsrf ? { 'X-XSRF-TOKEN': decodeURIComponent(xsrf) } : {}), ...init.headers },
       credentials: init.credentials ?? (csrf ? 'include' : 'omit'),
       cache: 'no-store',
     });
     const body: unknown = await response.json().catch(() => ({}));
     if (!response.ok) {
       if (response.status === 429) throw new Error('Too many requests were sent. Please wait a minute and try again.');
-      if (response.status >= 500) throw new Error('The quote service is temporarily unavailable. Please try again shortly.');
+      if (response.status === 401 || response.status === 419) throw new Error('Your session has expired. Please sign in again.');
+      if (response.status === 403) throw new Error('Your account does not have permission to use this feature.');
+      if (response.status === 503 && path === '/call-center/token') throw new Error('Calling is not connected yet. Twilio credentials and an active calling number are required. Your lead queue is still available.');
+      if (response.status >= 500) throw new Error('This service is temporarily unavailable. Please try again shortly.');
       throw new Error(responseMessage(body) || 'Something went wrong. Please review your information and try again.');
     }
     return body as T;
