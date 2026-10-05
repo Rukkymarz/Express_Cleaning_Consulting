@@ -10,7 +10,6 @@ use App\Http\Controllers\ServicePlanController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\QuoteController;
 use App\Http\Controllers\RequestController;
-use App\Http\Controllers\VoiceController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -19,7 +18,6 @@ Route::prefix('v1')->group(function () {
     Route::post('/requests',[RequestController::class,'store'])->middleware('throttle:10,1');
     Route::post('/quotes/preview',[RequestController::class,'preview'])->middleware('throttle:20,1');
     Route::post('/webhooks/stripe',[PaymentController::class,'webhook']);
-    Route::post('/webhooks/twilio/status',[VoiceController::class,'status']);
     Route::post('/auth/register',[AuthController::class,'register'])->middleware('throttle:5,1');
     Route::post('/auth/login',[AuthController::class,'login'])->middleware('throttle:10,1');
     Route::middleware('auth:sanctum')->group(function () {
@@ -48,9 +46,6 @@ Route::prefix('v1')->group(function () {
         Route::middleware('permission:bookings.dispatch')->post('/admin/bookings/{id}/transition',[BookingController::class,'transition']);
         Route::middleware('permission:bookings.dispatch')->post('/admin/bookings/{bookingId}/plan',[ServicePlanController::class,'createFromBooking']);
         Route::middleware('permission:bookings.dispatch')->post('/admin/plan-requests/{changeId}/resolve',[ServicePlanController::class,'resolve']);
-        Route::middleware('permission:calls.place')->post('/agent/presence',[VoiceController::class,'presence']);
-        Route::middleware('permission:calls.place')->get('/agent/calls',[VoiceController::class,'list']);
-        Route::middleware('permission:calls.place')->post('/admin/calls/{id}/notes',[VoiceController::class,'note']);
         Route::middleware('permission:campaigns.manage')->post('/admin/campaigns',[CampaignController::class,'create']);
         Route::middleware('permission:campaigns.manage')->post('/admin/campaigns/{id}/approve',[CampaignController::class,'approve']);
     });
