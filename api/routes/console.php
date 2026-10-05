@@ -91,3 +91,7 @@ Artisan::command('quote-notifications:recover {--limit=50}', function () {
 
     $this->info("Dispatched {$dispatched} quote notification recovery job(s).");
 })->purpose('Recover quote notifications that were not queued or whose provider result stalled.');
+
+Artisan::command('prospects:remind {--dry-run}', function () {
+    $this->info(json_encode(app(\App\Services\ProspectReminderService::class)->run((bool)$this->option('dry-run'))));
+})->purpose('Send one weekday outreach reminder to Christine after 9 AM Eastern when work is available.');

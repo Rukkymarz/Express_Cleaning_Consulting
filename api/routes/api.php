@@ -4,6 +4,7 @@ use App\Http\Controllers\BookingController;
 use App\Http\Controllers\CampaignController;
 use App\Http\Controllers\CrmController;
 use App\Http\Controllers\LeadController;
+use App\Http\Controllers\ProspectController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\ServicePlanController;
 use App\Http\Controllers\PaymentController;
@@ -35,6 +36,10 @@ Route::prefix('v1')->group(function () {
         Route::post('/account/plans/{publicId}/change-requests',[ServicePlanController::class,'requestChange']);
         Route::post('/quotes/{quoteId}/accept',[QuoteController::class,'accept']);
         Route::post('/payments/intents',[PaymentController::class,'intent']);
+        Route::middleware('permission:leads.view')->get('/admin/prospects',[ProspectController::class,'index']);
+        Route::middleware('permission:leads.edit')->post('/admin/prospects',[ProspectController::class,'store']);
+        Route::middleware('permission:leads.edit')->patch('/admin/prospects/{id}',[ProspectController::class,'update']);
+        Route::middleware('permission:leads.edit')->post('/admin/prospects/{id}/convert',[ProspectController::class,'convert']);
         Route::middleware('permission:leads.view')->get('/admin/leads',[LeadController::class,'index']);
         Route::middleware('permission:leads.view')->get('/admin/leads/{id}',[LeadController::class,'show']);
         Route::middleware('permission:leads.view')->get('/admin/agents',[LeadController::class,'agents']);
