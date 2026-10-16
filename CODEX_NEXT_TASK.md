@@ -1,7 +1,12 @@
-# Apply the prepared Express Cleaning launch update
+# Next task
 
-Repository: Rukkymarz/Express_Cleaning_Consulting. Existing draft branch: design/petrol-copper-cookies; PR #1.
+The October 16 website launch is deployed. Read STATE.md for evidence and exact remaining items.
 
-Apply the included api/, web/ and read-only CI workflow to that branch, checking for newer upstream changes before overwriting. Read LAUNCH_READINESS.md and STATE.md. Run all checks, including the Laravel suite, before merging/deploying. Fix any runtime/test failures. Deploy the API/migration before exposing new forms on web, and verify synthetic persistence, safe replay, staff permissions, email provider acceptance/inbox delivery, and 1440/768/390px browser behavior. Do not claim production updates until deployed revisions are verified. Add the real GA4/Meta IDs only from the owner's accounts; blank IDs are deliberately disabled. Publish no unconfirmed city pages or new stock job photos. Retain the approved 10%/up to $30 offer and 24-hour guarantee. Keep live payments disabled. No purchases or live charges.
+1. Verify the owner received the synthetic quote and first-clean offer emails at expressconsulting92@gmail.com; reconcile blocked/ambiguous outbox records through authenticated operations, never blindly resend.
+2. Supply valid GA4 and Meta IDs in the web service and verify consent-aware events with provider tools.
+3. Confirm partner coverage before enabling city/service pages; do not invent serviced cities.
+4. Complete authorized staff-session verification of /admin/inquiries.
+5. Keep live Stripe disabled until business rules and sandbox verification are complete.
 
-The attached desktop/mobile HTML is a disabled-form review copy, not a deployed service. Source code is the implementation of record.
+Live: https://www.expresscleaningconsult.com/
+Desktop/mobile review: https://www.expresscleaningconsult.com/design-preview.html

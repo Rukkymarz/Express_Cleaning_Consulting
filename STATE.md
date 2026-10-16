@@ -1,32 +1,26 @@
-# STATE — Express Cleaning Consult
-Updated October 16, 2026.
+# Express Cleaning Consult — launch state
 
-## Current target
-Publish the approved petrol/copper desktop/mobile site and the prioritized nationwide quote, offer, partner/referral and email workflows.
+Updated 2026-10-16 UTC.
 
-## Verdict
-Source implementation is complete for the agreed launch scope; production rollout is not complete. Frontend typecheck, tracking behavior checks, webpack production build, PHP syntax checks and WebP size/decode checks pass. Laravel runtime tests and live browser/email verification remain required. Existing draft PR #1 has not yet received this source update.
+## Deployed
+- Responsive petrol/copper homepage, approved project photo gallery, first-clean offer (10%, up to $30, FIRSTCLEAN10), cookie choices, nationwide ZIP inquiry, FAQ and policies.
+- Property manager/vendor, partner cleaner and referral forms; persisted public intakes, private staff inquiry inbox, bounded Resend outbox and quote confirmation mail.
+- PR #1 merged to main as 21489d5152465f5ff8de96e31850f9a3f22a469c; subsequent main commits polish popup/mobile contact layout and publish the public desktop/mobile review.
+- Live website: https://www.expresscleaningconsult.com/
+- Public review: https://www.expresscleaningconsult.com/design-preview.html (disabled submissions, noindex).
 
-## Stack
-Existing Next.js/React web, Laravel 13 API, MySQL, Railway, GitHub, Resend. Optional GA4 and Meta loaders are consent-gated and inert without real IDs. Stripe live payments remain outside this change.
+## Verified
+- GitHub Actions frontend typecheck, tracking consent/dedup checks, production build and full Laravel suite passed before merge; main checks also passed.
+- Committed release files and all eleven WebP assets were downloaded and hash-compared with the prepared release.
+- Live browser quote succeeded with receipt 01M52G8GMPM4H5SZEVYQRD2AD8. Synthetic name/address and owner-approved staff inbox; no payment or service booking.
+- Live discount intake displayed FIRSTCLEAN10 and queued its offer email. Ongoing marketing consent remained unchecked.
+- ZIP prefill, state selector, new public pages, real gallery image loading and desktop overflow checked. Unauthenticated admin inquiries returned a sign-in message and no records.
+- The labeled quote test and owner-email discount test were retained. No deletion was attempted.
 
-## Capital deployed
-$0 in new purchases, subscriptions, phone numbers, invoices or charges.
-
-## Next 3 actions
-1. Apply the launch update to the draft branch, run the included read-only CI workflow and Laravel test suite, and deploy API/migrations before the web rollout.
-2. Verify synthetic quote/offer/partner/vendor/referral persistence, limited staff inquiry access, Resend delivery, and live desktop/mobile behavior.
-3. Supply real tracking IDs, verify Search Console/sitemap, and publish city pages only after partner coverage is confirmed.
-
-## Owner decisions retained
-- First-clean offer: 10%, maximum $30, code FIRSTCLEAN10, conditions in Terms/written quote.
-- Cities: confirm later; no city SEO pages are published yet.
-- Owner affirmed all supplied project pairs are company/partner jobs with customer publication permission.
-- Public support: support@expresscleaningconsult.com; (281) 972-7712. Staff quote inbox: expressconsulting92@gmail.com.
-
-## Open risks
-- GitHub API connector returns 404 for the private repo. Browser single-file upload succeeds but takes over two minutes. Official web editor requests additional GitHub authorization; no new repository permissions have been granted.
-- PHP/Composer are absent here. Syntax checks are not runtime/test evidence.
-- Current approved hero is 1131px wide; a 1920px+ approved kitchen/living-room original is still needed.
-- Supplied third-party photographs/video are archived as candidates, not represented as company jobs or staff.
-- No production changes or new live customer/test submissions occurred in this continuation.
+## Still needs external input or verification
+- Real GA4 measurement and Meta Pixel IDs; tracking remains inert without valid IDs and optional consent.
+- Confirmed partner cities/ZIP coverage before activating city pages.
+- Inbox delivery of queued quote/offer mail has not been independently verified; connected Gmail is not the notification inbox. Do not claim delivered.
+- Authenticated staff inbox review needs an authorized staff session; guest protection passed.
+- No live Stripe charges enabled; payment rules and sandbox completion remain separate.
+- Old Railway project loving-love continues to report a failing unrelated deployment; inspect intended Express Cleaning Consult web/API statuses separately.
