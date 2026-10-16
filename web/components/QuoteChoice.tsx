@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
+import Guarantee from './Guarantee';
 import { Building2, House, KeyRound } from 'lucide-react';
 
 const choices = [
@@ -19,7 +20,7 @@ export default function QuoteChoice() {
         {choices.map(({ label, code, Icon }) => <button type="button" key={code} aria-pressed={selected === code} onClick={() => setSelected(code)}><Icon size={22} strokeWidth={1.8} /><span>{label}</span><span aria-hidden="true" className="ecc-radio">{selected === code ? '●' : '○'}</span></button>)}
       </div>
       <Link href={`/book?service=${selected}`} className="ecc-button">Start my quote <span aria-hidden="true">→</span></Link>
-      <small>No payment taken when you request a quote.</small>
+      <small>No card required. No payment taken.</small><Guarantee/>
     </div>
   </div>;
 }
