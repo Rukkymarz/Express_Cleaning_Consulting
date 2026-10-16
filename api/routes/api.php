@@ -13,6 +13,7 @@ use App\Http\Controllers\RequestController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
+    Route::post('/public-intakes',[\App\Http\Controllers\PublicIntakeController::class,'store'])->middleware('throttle:5,1');
     Route::get('/catalog',[RequestController::class,'catalog']);
     Route::get('/requests/{requestId}/status',[RequestController::class,'status'])->whereUlid('requestId')->middleware('throttle:30,1');
     Route::post('/requests',[RequestController::class,'store'])->middleware('throttle:10,1');
@@ -21,6 +22,8 @@ Route::prefix('v1')->group(function () {
     Route::post('/auth/register',[AuthController::class,'register'])->middleware('throttle:5,1');
     Route::post('/auth/login',[AuthController::class,'login'])->middleware('throttle:10,1');
     Route::middleware('auth:sanctum')->group(function () {
+        Route::middleware('permission:leads.view')->get('/admin/inquiries',[\App\Http\Controllers\PublicIntakeController::class,'index']);
+        Route::middleware('permission:leads.edit')->patch('/admin/inquiries/{id}',[\App\Http\Controllers\PublicIntakeController::class,'update'])->whereUlid('id');
         Route::post('/auth/logout',[AuthController::class,'logout']);
         Route::get('/account/bookings',[CrmController::class,'accountBookings']);
         Route::get('/account/bookings/{publicId}',[CrmController::class,'accountBooking']);

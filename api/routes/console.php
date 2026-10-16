@@ -89,6 +89,12 @@ Artisan::command('quote-notifications:recover {--limit=50}', function () {
         }
     }
 
+    if (\Illuminate\Support\Facades\Schema::hasTable('launch_mail_outbox')) {
+        DB::table('launch_mail_outbox')->where('status','sending')->where('updated_at','<',now()->subMinutes(5))->update(['status'=>'needs_reconciliation','failure_reason'=>'stale_sender','updated_at'=>now()]);
+        foreach(DB::table('launch_mail_outbox')->whereIn('status',['queued','retrying'])->orderBy('id')->limit(50)->pluck('id') as $id) {
+            \App\Jobs\SendLaunchMail::dispatch((int)$id)->onConnection('database')->onQueue('quote-notifications');
+        }
+    }
     $this->info("Dispatched {$dispatched} quote notification recovery job(s).");
 })->purpose('Recover quote notifications that were not queued or whose provider result stalled.');
 

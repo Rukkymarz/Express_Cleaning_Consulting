@@ -14,6 +14,8 @@ function scriptUrl(value: string | undefined, provider: 'hubspot' | 'salesiq') {
 
 export function GET() {
   return Response.json({
+    ga4: /^G-[A-Z0-9]+$/.test(process.env.GA4_MEASUREMENT_ID || '') ? process.env.GA4_MEASUREMENT_ID : null,
+    meta: /^\d{5,25}$/.test(process.env.META_PIXEL_ID || '') ? process.env.META_PIXEL_ID : null,
     hubspot: scriptUrl(process.env.HUBSPOT_SCRIPT_URL, 'hubspot'),
     salesiq: scriptUrl(process.env.SALESIQ_WIDGET_URL, 'salesiq'),
   }, { headers: { 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex' } });

@@ -12,7 +12,7 @@ export default function BeforeAfterGallery({ serviceCode }: { serviceCode?: stri
 
   return <section id="results" aria-labelledby="results-title" className="bg-white px-5 py-16 md:px-8">
     <div className="mx-auto max-w-7xl">
-      <div className="max-w-3xl"><p className="font-bold uppercase tracking-[.15em] text-ocean">Our work</p><h2 id="results-title" className="mt-3 text-3xl font-bold text-ink md:text-4xl">Before and after, side by side</h2><p className="mt-4 leading-7 text-slate-600">Real project pairs will include the service context, a useful caption, and an accessible description for each image.</p></div>
+      <div className="max-w-3xl"><p className="font-bold uppercase tracking-[.15em] text-ocean">Our work</p><h2 id="results-title" className="mt-3 text-3xl font-bold text-ink md:text-4xl">Before and after, side by side</h2><p className="mt-4 leading-7 text-slate-600">Explore real project photos supplied by Express Cleaning Consult. Results vary with the condition and scope of each space.</p></div>
       {active ? <div className="mt-8 rounded-[2rem] border border-platinum bg-canvas p-4 shadow-[0_16px_45px_rgba(30,41,59,.07)] sm:p-6">
         {matches.length > 1 && <div aria-label="Cleaning projects" className="mb-6 flex flex-wrap gap-3">{matches.map((result, index) => <button key={result.id} type="button" aria-pressed={selected === index} onClick={() => setSelected(index)} className={`rounded-full border px-5 py-3 text-sm font-bold ${selected === index ? 'border-ocean bg-ocean text-white' : 'border-platinum-dark bg-white text-ink hover:border-ocean'}`}>{result.title}</button>)}</div>}
         <h3 className="mb-5 text-xl font-bold text-ink">{active.title}</h3>

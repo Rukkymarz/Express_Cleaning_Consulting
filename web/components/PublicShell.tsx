@@ -1,0 +1,5 @@
+import Link from 'next/link';
+import Guarantee from './Guarantee';
+import { contact } from '@/lib/launch';
+import '../app/home.css';
+export default function PublicShell({children}:{children:React.ReactNode}){return <div className="ecc-home"><header className="ecc-header"><div className="ecc-wrap ecc-nav"><Link href="/" className="ecc-brand"><span>EXPRESS<span className="ecc-brand-sub">CLEANING CONSULT</span></span></Link><nav className="ecc-nav-links" aria-label="Main navigation"><a href={`tel:${contact.phone}`} className="ecc-signin">{contact.displayPhone}</a><Link href="/book" className="ecc-button">Free quote →</Link></nav></div><div className="ecc-header-guarantee"><Guarantee/></div></header><main className="ecc-wrap ecc-public-page">{children}</main><footer className="ecc-footer"><div className="ecc-wrap"><div className="ecc-footer-bottom"><Link href="/">Express Cleaning Consult</Link><a href={`tel:${contact.phone}`}>{contact.displayPhone}</a><a href={`mailto:${contact.email}`}>{contact.email}</a><Link href="/privacy">Privacy</Link><Link href="/terms">Terms</Link></div></div></footer></div>;}
