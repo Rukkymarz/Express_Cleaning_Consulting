@@ -56,3 +56,6 @@
 .ecc-offer-dialog{margin:auto;}
 
 @media(max-width:700px){.ecc-topbar{display:block;}.ecc-topbar .ecc-wrap{gap:10px;}.ecc-topbar a{min-height:32px;letter-spacing:.02em;font-size:11px;}.ecc-footer-grid>div>a{overflow-wrap:anywhere;max-width:100%;}}
+
+.ecc-home .ecc-quote-intro h2{font-size:20px;line-height:1.2;margin:0;}
+@media(max-width:700px){.ecc-hero .ecc-wrap{width:calc(100% - 36px);}}
