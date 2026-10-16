@@ -1,0 +1,4 @@
+import PublicShell from '@/components/PublicShell';
+import PublicIntakeForm from '@/components/PublicIntakeForm';
+export const metadata={title:'Refer a Cleaning Client',description:'Refer a client for cleaning, turnovers or project cleanup. For realtors, movers and contractors, with the client’s permission.',alternates:{canonical:'/refer-a-client'}};
+export default function Page(){return <PublicShell><span className="ecc-eyebrow">REALTORS · MOVERS · CONTRACTORS</span><h1>A clean handoff<br/><em>for your clients.</em></h1><p className="ecc-page-lead">Connect a client with our team for a free quote. We review the service scope and local availability before scheduling.</p><section className="ecc-panel"><h2>Refer a client</h2><p>Please get their permission first. Provide a client phone number or email so we can discuss their request. No referral fee is promised by this form.</p><PublicIntakeForm kind="referral"/></section></PublicShell>;}
