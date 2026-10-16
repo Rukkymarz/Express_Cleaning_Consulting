@@ -51,3 +51,6 @@
 @media(max-width:520px){.ecc-form-grid{grid-template-columns:1fr;}.ecc-zip-form{padding:22px;}.ecc-zip-form>div{flex-direction:column;}.ecc-zip-form input{width:100%;}.ecc-business-links article{padding:26px;}.ecc-public-page .ecc-nav-links{flex-wrap:wrap;}.ecc-contact-heading .ecc-guarantee{max-width:none;}}
 
 .ecc-header-guarantee{background:#eef3ef;text-align:center;padding:7px 20px;}.ecc-header-guarantee .ecc-guarantee{max-width:none;font-size:10px!important;margin:0!important;}.ecc-public-page .ecc-footer-bottom a{overflow-wrap:anywhere;}.ecc-nav-links{gap:20px;}@media(max-width:520px){.ecc-nav>.ecc-nav-links>.ecc-signin{max-width:none;}.ecc-nav .ecc-brand{font-size:16px;}.ecc-header-guarantee .ecc-guarantee{font-size:9px!important;}.ecc-public-page .ecc-nav-links{gap:8px;}.ecc-public-page .ecc-button{padding:12px 15px;}.ecc-service-card .ecc-guarantee{font-size:10px!important;}}
+
+/* Native dialog positioning after the global CSS reset. */
+.ecc-offer-dialog{margin:auto;}
