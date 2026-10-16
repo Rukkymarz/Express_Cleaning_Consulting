@@ -35,7 +35,7 @@ class RequestController extends Controller
             'frequency' => 'required|in:one_time,weekly,biweekly,monthly,recurring_commercial,as_needed',
             'add_on_codes' => 'array|max:10', 'add_on_codes.*' => 'string|distinct|exists:service_types,code',
             'contact.name' => 'required|string|max:150', 'contact.email' => 'required|email:rfc|max:255',
-            'contact.phone' => 'required|string|max:32', 'notes' => 'nullable|string|max:3000',
+            'contact.phone' => 'required|string|max:32', 'promotion_code'=>'nullable|in:FIRSTCLEAN10', 'notes' => 'nullable|string|max:3000',
             'consent.transactional_sms' => 'required|boolean', 'consent.marketing_email' => 'required|boolean',
             'consent.marketing_sms' => 'required|boolean', 'consent.review_email' => 'required|boolean',
         ];
@@ -100,7 +100,7 @@ class RequestController extends Controller
             $publicId = (string) Str::ulid();
             $preferred = !empty($data['preferred_start']) ? CarbonImmutable::parse($data['preferred_start'], $data['time_zone'])->utc() : null;
             abort_if($preferred && $preferred->isPast(),422,'Preferred date must be in the future');
-            $serviceRequestId = DB::table('service_requests')->insertGetId(['public_id' => $publicId, 'lead_id' => $leadId, 'address_id' => $addressId, 'service_type_id' => $service->id, 'market_id' => $market?->id, 'status' => 'received', 'property_type'=>$data['property']['type'], 'frequency' => $data['frequency'], 'square_feet' => $data['property']['square_feet'] ?? null, 'bedrooms' => $data['property']['bedrooms'] ?? null, 'bathrooms' => $data['property']['bathrooms'] ?? null, 'condition' => $data['property']['condition'], 'pets_on_site'=>$data['property']['pets_on_site'], 'supplies_available'=>$data['property']['supplies_available'], 'access_notes'=>$data['access_notes']??null, 'preferred_start_at' => $preferred, 'time_zone' => $data['time_zone'], 'scope_notes' => $data['notes'] ?? null, 'created_at' => $now, 'updated_at' => $now]);
+            $serviceRequestId = DB::table('service_requests')->insertGetId(['public_id' => $publicId, 'lead_id' => $leadId, 'address_id' => $addressId, 'service_type_id' => $service->id, 'market_id' => $market?->id, 'status' => 'received', 'property_type'=>$data['property']['type'], 'frequency' => $data['frequency'], 'square_feet' => $data['property']['square_feet'] ?? null, 'bedrooms' => $data['property']['bedrooms'] ?? null, 'bathrooms' => $data['property']['bathrooms'] ?? null, 'condition' => $data['property']['condition'], 'pets_on_site'=>$data['property']['pets_on_site'], 'supplies_available'=>$data['property']['supplies_available'], 'access_notes'=>$data['access_notes']??null, 'preferred_start_at' => $preferred, 'time_zone' => $data['time_zone'], 'scope_notes' => trim(($data['notes'] ?? '').(!empty($data['promotion_code']) ? "\nRequested offer: FIRSTCLEAN10 (10% up to $30; staff must confirm eligibility before quote approval)." : '')), 'created_at' => $now, 'updated_at' => $now]);
             foreach ($data['add_on_codes'] ?? [] as $code) { $addOn = DB::table('service_types')->where('code', $code)->where('category', 'Add-on')->first(); abort_unless($addOn, 422, 'Invalid add-on'); DB::table('request_add_ons')->insert(['service_request_id' => $serviceRequestId, 'service_type_id' => $addOn->id]); }
             foreach (['transactional_sms','marketing_email','marketing_sms','review_email'] as $channel) DB::table('consents')->insert(['lead_id' => $leadId, 'channel' => $channel, 'granted' => $data['consent'][$channel], 'source' => 'booking_wizard', 'policy_version' => '2026-09', 'recorded_at' => $now, 'created_at' => $now, 'updated_at' => $now]);
             DB::table('provider_events')->where('id',$receiptEvent->id)->update(['processed_at'=>$now]);
@@ -132,6 +132,8 @@ class RequestController extends Controller
                 'created_at' => $now,
                 'updated_at' => $now,
             ]);
+            app(\App\Services\LaunchMail::class)->queue('quote-confirmation-'.$publicId,$data['contact']['email'],'We received your cleaning quote request',
+                "Hello ".$data['contact']['name'].",\n\nWe received your free quote request.\nReference: ".$publicId."\nService: ".$service->name."\nCity: ".$data['address']['city']."\nPreferred date: ".($data['preferred_start']??'Not specified')." (".$data['time_zone'].")\n\nOur team will review scope, pricing and local availability. This is not a confirmed booking, and no payment has been taken.\n\nQuestions? Reply to support@expresscleaningconsult.com or call (281) 972-7712.");
             app(\App\Services\LeadService::class)->sync($leadId);
             return [
                 'receipt' => ['request_id' => $publicId, 'status' => 'received', 'next_step' => 'scope_review'],
