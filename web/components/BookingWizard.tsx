@@ -9,6 +9,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { extras, services } from '@/lib/catalog';
 import { jsonRequest } from '@/lib/api';
+import {trackQuoteLead} from '@/lib/tracking';
+import Guarantee from './Guarantee';
+import {offer} from '@/lib/launch';
 
 const US_STATES = [
   ['AL','Alabama'], ['AK','Alaska'], ['AZ','Arizona'], ['AR','Arkansas'], ['CA','California'], ['CO','Colorado'],
@@ -72,7 +75,7 @@ export default function BookingWizard() {
     resolver: zodResolver(schema), mode: 'onBlur',
     defaultValues: { service_code: '', property_type:'residential', square_feet: 0, bedrooms: 0, bathrooms: 0, condition: 'unsure', frequency: 'one_time', street: '', unit: '', city: '', region: '', postal_code: '', preferred_start: '', time_zone: 'America/New_York', add_on_codes: [], notes: '', pets_on_site:false, supplies_available:'unsure', access_notes:'', name: '', email: '', phone: '', transactional_sms: false, marketing_email: false, marketing_sms: false, review_email: false },
   });
-  useEffect(() => { const code = params.get('service'); if (code && services.some(s => s.code === code)) setValue('service_code', code); }, [params, setValue]);
+  useEffect(() => { const code = params.get('service'); if(code&&services.some(s=>s.code===code))setValue('service_code',code);const city=params.get('city');if(city&&city.length<=100)setValue('city',city);const state=params.get('state');if(state&&US_STATES.some(([v])=>v===state))setValue('region',state);const zip=params.get('zip');if(zip&&/^\d{5}$/.test(zip))setValue('postal_code',zip);try{const email=sessionStorage.getItem('ecc_offer_email');if(email)setValue('email',email);}catch{} },[params,setValue]);
   useEffect(() => { heading.current?.focus(); }, [step, receipt]);
   const addOns = watch('add_on_codes');
   async function next() {
@@ -83,17 +86,19 @@ export default function BookingWizard() {
     }
     setServerError(''); setStep(s => Math.min(s + 1, 3));
   }
+  function requestedOffer(){if(params.get('offer')===offer.code)return offer.code;try{return sessionStorage.getItem('ecc_offer')===offer.code?offer.code:null;}catch{return null;}}
   async function submit(v: FormValues) {
     setSubmitting(true); setServerError('');
     try {
-      const result = await jsonRequest<{ request_id: string }>('/requests', { method: 'POST', headers: { 'Idempotency-Key': requestKey.current }, body: JSON.stringify(payload(v)) }, { csrf: false, networkErrorMessage: "We couldn't confirm that your request was received. Check your connection and try again—retries are safe and won't create a duplicate request." });
+      const result = await jsonRequest<{ request_id: string }>('/requests', { method: 'POST', headers: { 'Idempotency-Key': requestKey.current }, body: JSON.stringify({...payload(v),promotion_code:requestedOffer()}) }, { csrf: false, networkErrorMessage: "We couldn't confirm that your request was received. Check your connection and try again—retries are safe and won't create a duplicate request." });
       setReceipt(result.request_id);
+      try{trackQuoteLead(result.request_id,v.service_code);}catch{/* Measurement must not interrupt a saved request. */}
     } catch (error) { setServerError(error instanceof Error ? error.message : 'Please try again.'); }
     finally { setSubmitting(false); }
   }
 
   return <div className="mx-auto max-w-3xl"><Link href="/" className="font-bold text-ocean underline underline-offset-4">← Express Cleaning Consult</Link><div className="mt-7 overflow-hidden rounded-3xl border border-platinum bg-white shadow-[0_24px_70px_rgba(30,41,59,.07)]"><div className="bg-[#EAF5F2] px-6 py-7 md:px-10"><p className="text-sm font-bold uppercase tracking-[.16em] text-ocean">Free quote request</p><h1 ref={heading} tabIndex={-1} className="mt-2 text-3xl font-bold md:text-4xl">{receipt ? 'Request received' : labels[step]}</h1><p className="mt-3 text-slate-600">{receipt ? 'We’ll review your details and contact you about scope, pricing and availability.' : 'We confirm the price and appointment with you before scheduling. No payment is taken when you submit.'}</p></div>
-    {receipt ? <div className="px-6 py-12 md:px-10"><p className="text-lg">Your reference number is <strong>{receipt}</strong>.</p><p className="mt-4 text-slate-600">Keep this number for your records. No payment has been taken.</p><Link href="/" className="mt-8 inline-block rounded-xl bg-ocean px-6 py-3 font-bold text-white">Back to home</Link></div> : <form onSubmit={handleSubmit(submit)} noValidate className="px-6 py-8 md:px-10">
+    {receipt ? <div className="px-6 py-12 md:px-10"><p className="text-lg">Your reference number is <strong>{receipt}</strong>.</p><p className="mt-4 text-slate-600">Keep this number for your records. No payment has been taken. We’ve queued a confirmation email with your request reference.</p><Link href="/" className="mt-8 inline-block rounded-xl bg-ocean px-6 py-3 font-bold text-white">Back to home</Link></div> : <form onSubmit={handleSubmit(submit)} noValidate className="px-6 py-8 md:px-10">
       <p className="mb-3 text-sm font-semibold text-ocean sm:hidden">Step {step+1} of 4 — {labels[step]}</p><ol aria-label="Request progress" className="mb-8 grid grid-cols-4 gap-2">{labels.map((label,i)=><li key={label} className={`rounded-lg border px-2 py-2 text-center text-xs font-semibold md:text-sm ${i === step ? 'border-ocean bg-[#EAF5F2] text-ocean' : 'border-platinum text-slate-500'}`} aria-current={i===step?'step':undefined}>{i+1}. <span className="hidden sm:inline">{label}</span></li>)}</ol>
       <motion.div key={step} initial={reduced ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .2 }}>
         {step===0 && <div className="grid gap-5 sm:grid-cols-2">
@@ -111,6 +116,7 @@ export default function BookingWizard() {
       </motion.div>
       {serverError && <p role="alert" aria-live="assertive" className="mt-6 rounded-lg bg-red-50 p-3 text-sm font-medium text-red-800">{serverError}</p>}
       <div className="mt-9 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between"><button type="button" onClick={()=>setStep(s=>Math.max(0,s-1))} disabled={step===0 || submitting} className="min-h-12 w-full rounded-xl border border-platinum-dark px-5 py-3 font-bold disabled:opacity-40 sm:w-auto">Back</button>{step<3?<button type="button" onClick={next} className="min-h-12 w-full rounded-xl bg-ocean px-7 py-3 font-bold text-white hover:bg-[#05584C] sm:w-auto">Continue</button>:<button type="submit" disabled={submitting} className="min-h-12 w-full rounded-xl bg-ocean px-7 py-3 font-bold text-white disabled:opacity-50 sm:w-auto">{submitting?'Sending…':'Request my free quote'}</button>}</div>
+      <div className="mt-5"><Guarantee/><p className="mt-3 text-xs text-slate-500">By submitting, you ask us to review and respond to your request under our <a href="/terms" className="underline">Terms</a> and <a href="/privacy" className="underline">Privacy Policy</a>.</p></div>
     </form>}
   </div></div>;
 }
