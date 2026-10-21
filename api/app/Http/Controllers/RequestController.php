@@ -149,7 +149,7 @@ class RequestController extends Controller
                 'payload' => json_encode([
                     'receipt' => $publicId,
                     'customer_name' => $data['contact']['name'],
-                    'email' => $data['contact']['email'],
+                    'email' => $data['contact']['email'] ?? 'Not provided — call customer',
                     'phone' => $data['contact']['phone'],
                     'service' => $service->name,
                     'location' => $callback ? 'ZIP '.$data['address']['postal_code'].' — call to confirm address and scope.' : $data['address']['street']
