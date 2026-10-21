@@ -88,6 +88,67 @@ class PublicRequestTest extends TestCase
         Bus::assertDispatchedTimes(SendQuoteRequestNotification::class, 1);
     }
 
+    public function test_short_callback_saves_phone_zip_task_and_notice_without_inventing_scope(): void
+    {
+        Bus::fake();
+        $this->createService();
+        $payload = [
+            'request_kind' => 'callback', 'service_code' => 'RES-STD',
+            'address' => ['postal_code' => '30301'],
+            'contact' => ['name' => 'Callback Test', 'phone' => '(404) 555-0100'],
+            'notes' => 'Please call about a move-out clean.',
+        ];
+        $headers = $this->headers('callback-request-test');
+        $first = $this->postJson('/api/v1/requests', $payload, $headers);
+        $first->assertStatus(202)->assertJsonPath('workflow.task_status', 'open');
+        $sr = DB::table('service_requests')->where('public_id', $first->json('request_id'))->first();
+        $this->assertDatabaseHas('leads', ['id' => $sr->lead_id, 'phone' => '(404) 555-0100', 'email' => null]);
+        $this->assertDatabaseHas('addresses', ['id' => $sr->address_id, 'postal_code' => '30301', 'street' => null, 'city' => null, 'region' => null]);
+        $this->assertNull($sr->pets_on_site);
+        $this->assertNull($sr->frequency);
+        $this->assertNull($sr->time_zone);
+        $this->assertNull($sr->preferred_start_at);
+        $this->assertStringContainsString('Callback requested.', $sr->scope_notes);
+        $this->assertSame(0, DB::table('consents')->where('lead_id', $sr->lead_id)->where('granted', true)->count());
+        $this->assertDatabaseCount('launch_mail_outbox', 0);
+        $notice = json_decode(DB::table('quote_request_notifications')->value('payload'), true);
+        $this->assertStringContainsString('ZIP 30301', $notice['location']);
+        $this->assertSame('(404) 555-0100', $notice['phone']);
+        $this->assertSame('Not provided — call customer', $notice['email']);
+        config()->set('services.quote_notifications', [
+            'resend_key' => 'test-provider-key', 'from' => 'verified@example.test',
+            'to' => 'expressconsulting92@gmail.com', 'review_url' => 'https://www.expresscleaningconsult.com/admin',
+        ]);
+        // The worker must still send the staff notice when the customer leaves email blank.
+        DB::table('quote_request_notifications')->update(['payload' => json_encode([...$notice, 'review_url' => 'https://www.expresscleaningconsult.com/admin'])]);
+        $mailer = Mockery::mock(QuoteRequestMailer::class);
+        $mailer->shouldReceive('send')->once()->andReturn('callback-staff-notice');
+        (new SendQuoteRequestNotification($sr->id))->handle($mailer);
+        $this->assertDatabaseHas('quote_request_notifications', ['service_request_id' => $sr->id, 'status' => 'sent']);
+        $this->postJson('/api/v1/requests', $payload, $headers)->assertStatus(202)->assertJsonPath('request_id', $first->json('request_id'));
+        $this->assertDatabaseCount('leads', 1);
+        $this->assertDatabaseCount('staff_tasks', 1);
+        $this->assertDatabaseCount('quote_request_notifications', 1);
+        Bus::assertDispatchedTimes(SendQuoteRequestNotification::class, 1);
+    }
+
+    public function test_callback_optional_email_queues_one_confirmation_and_invalid_contact_is_rejected(): void
+    {
+        Bus::fake();
+        $this->createService();
+        $payload = ['request_kind' => 'callback', 'service_code' => 'RES-STD',
+            'address' => ['postal_code' => '30301'],
+            'contact' => ['name' => 'Callback Test', 'phone' => '4045550100', 'email' => 'callback@example.test']];
+        $this->postJson('/api/v1/requests', $payload, $this->headers('callback-email'))->assertStatus(202);
+        $this->assertDatabaseHas('launch_mail_outbox', ['recipient' => 'callback@example.test']);
+        $this->assertDatabaseCount('launch_mail_outbox', 1);
+        $payload['contact']['phone'] = 'not a number';
+        $payload['address']['postal_code'] = 'ZIP';
+        $this->postJson('/api/v1/requests', $payload, $this->headers('callback-invalid'))
+            ->assertStatus(422)->assertJsonValidationErrors(['contact.phone', 'address.postal_code']);
+        $this->assertDatabaseCount('leads', 1);
+    }
+
     public function test_public_request_rejects_unknown_state_code(): void
     {
         $this->createService();
