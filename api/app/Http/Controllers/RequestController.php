@@ -41,6 +41,23 @@ class RequestController extends Controller
         ];
     }
 
+    private function callbackRules(): array
+    {
+        return [
+            'request_kind' => 'required|in:callback',
+            'service_code' => 'required|string|max:32|exists:service_types,code',
+            'address.postal_code' => ['required', 'string', 'regex:/^\d{5}(-\d{4})?$/'],
+            'contact.name' => 'required|string|min:2|max:150',
+            'contact.phone' => ['required', 'string', 'max:32', 'regex:/^\+?[0-9().\s-]+$/', function ($attribute, $value, $fail) {
+                $digits = preg_replace('/\D/', '', $value);
+                if (!preg_match('/^(?:1)?[2-9][0-9]{2}[2-9][0-9]{6}$/', $digits)) $fail('Enter a valid US phone number.');
+            }],
+            'contact.email' => 'nullable|email:rfc|max:255',
+            'notes' => 'nullable|string|max:3000',
+            'promotion_code' => 'nullable|in:FIRSTCLEAN10',
+        ];
+    }
+
     public function catalog(): \Illuminate\Http\JsonResponse
     {
         return response()->json([
@@ -75,11 +92,23 @@ class RequestController extends Controller
 
     public function store(Request $request, QuoteNotificationDispatcher $notifications): \Illuminate\Http\JsonResponse
     {
-        $data = $request->validate($this->rules());
+        $callback = $request->input('request_kind') === 'callback';
+        $data = $request->validate($callback ? $this->callbackRules() : $this->rules());
+        if ($callback) {
+            // Unknown scope stays unknown; the staff task is a request to call, not a booking.
+            $data['address'] += ['street' => null, 'unit' => null, 'city' => null, 'region' => null, 'country' => 'US'];
+            $data['contact']['email'] = $data['contact']['email'] ?? null;
+            $data['property'] = ['type' => 'other', 'condition' => 'unsure', 'pets_on_site' => null, 'supplies_available' => 'unsure'];
+            $data['frequency'] = null;
+            $data['time_zone'] = null;
+            $data['consent'] = array_fill_keys(['transactional_sms','marketing_email','marketing_sms','review_email'], false);
+            $data['notes'] = "Callback requested. Confirm address, property details, cleaning scope and preferred date by phone.\n".($data['notes'] ?? '');
+        }
+        $region = isset($data['address']['region']) ? strtoupper($data['address']['region']) : null;
         $key = $request->header('Idempotency-Key');
         abort_unless($key && strlen($key) <= 120, 422, 'Idempotency-Key required');
         // A unique key is scoped to this endpoint; replay returns the original receipt.
-        $result = DB::transaction(function () use ($data, $key, $request) {
+        $result = DB::transaction(function () use ($data, $key, $request, $callback, $region) {
             $now = now();
             $inserted = DB::table('provider_events')->insertOrIgnore(['provider' => 'public_request', 'event_id' => $key, 'event_type' => 'request.created', 'created_at' => $now, 'updated_at' => $now]);
             $receiptEvent = DB::table('provider_events')->where('provider', 'public_request')->where('event_id', $key)->lockForUpdate()->first();
@@ -94,15 +123,15 @@ class RequestController extends Controller
             }
             $service = DB::table('service_types')->where('code', $data['service_code'])->where('request_enabled', true)->where('published',true)->where('category','!=','Add-on')->first();
             abort_unless($service, 422, 'Service unavailable for requests');
-            $market = DB::table('markets')->where('city', $data['address']['city'])->where('region', strtoupper($data['address']['region']))->first();
+            $market = $region && $data['address']['city'] ? DB::table('markets')->where('city', $data['address']['city'])->where('region', $region)->first() : null;
             $leadId = DB::table('leads')->insertGetId(['public_id' => (string) Str::ulid(), 'customer_id' => $request->user()?->id, 'name' => $data['contact']['name'], 'email' => $data['contact']['email'], 'phone' => $data['contact']['phone'], 'source' => 'web', 'status' => 'new', 'created_at' => $now, 'updated_at' => $now]);
-            $addressId = DB::table('addresses')->insertGetId(['user_id' => $request->user()?->id, 'street' => $data['address']['street'], 'unit' => $data['address']['unit'] ?? null, 'city' => $data['address']['city'], 'region' => strtoupper($data['address']['region']), 'postal_code' => $data['address']['postal_code'], 'country' => 'US', 'created_at' => $now, 'updated_at' => $now]);
+            $addressId = DB::table('addresses')->insertGetId(['user_id' => $request->user()?->id, 'street' => $data['address']['street'], 'unit' => $data['address']['unit'] ?? null, 'city' => $data['address']['city'], 'region' => $region, 'postal_code' => $data['address']['postal_code'], 'country' => 'US', 'created_at' => $now, 'updated_at' => $now]);
             $publicId = (string) Str::ulid();
             $preferred = !empty($data['preferred_start']) ? CarbonImmutable::parse($data['preferred_start'], $data['time_zone'])->utc() : null;
             abort_if($preferred && $preferred->isPast(),422,'Preferred date must be in the future');
             $serviceRequestId = DB::table('service_requests')->insertGetId(['public_id' => $publicId, 'lead_id' => $leadId, 'address_id' => $addressId, 'service_type_id' => $service->id, 'market_id' => $market?->id, 'status' => 'received', 'property_type'=>$data['property']['type'], 'frequency' => $data['frequency'], 'square_feet' => $data['property']['square_feet'] ?? null, 'bedrooms' => $data['property']['bedrooms'] ?? null, 'bathrooms' => $data['property']['bathrooms'] ?? null, 'condition' => $data['property']['condition'], 'pets_on_site'=>$data['property']['pets_on_site'], 'supplies_available'=>$data['property']['supplies_available'], 'access_notes'=>$data['access_notes']??null, 'preferred_start_at' => $preferred, 'time_zone' => $data['time_zone'], 'scope_notes' => trim(($data['notes'] ?? '').(!empty($data['promotion_code']) ? "\nRequested offer: FIRSTCLEAN10 (10% up to $30; staff must confirm eligibility before quote approval)." : '')), 'created_at' => $now, 'updated_at' => $now]);
             foreach ($data['add_on_codes'] ?? [] as $code) { $addOn = DB::table('service_types')->where('code', $code)->where('category', 'Add-on')->first(); abort_unless($addOn, 422, 'Invalid add-on'); DB::table('request_add_ons')->insert(['service_request_id' => $serviceRequestId, 'service_type_id' => $addOn->id]); }
-            foreach (['transactional_sms','marketing_email','marketing_sms','review_email'] as $channel) DB::table('consents')->insert(['lead_id' => $leadId, 'channel' => $channel, 'granted' => $data['consent'][$channel], 'source' => 'booking_wizard', 'policy_version' => '2026-09', 'recorded_at' => $now, 'created_at' => $now, 'updated_at' => $now]);
+            foreach (['transactional_sms','marketing_email','marketing_sms','review_email'] as $channel) DB::table('consents')->insert(['lead_id' => $leadId, 'channel' => $channel, 'granted' => $data['consent'][$channel], 'source' => $callback ? 'callback_form' : 'booking_wizard', 'policy_version' => '2026-09', 'recorded_at' => $now, 'created_at' => $now, 'updated_at' => $now]);
             DB::table('provider_events')->where('id',$receiptEvent->id)->update(['processed_at'=>$now]);
             DB::table('audit_events')->insert(['actor_id' => $request->user()?->id, 'entity_type' => 'request_receipt', 'entity_id' => $receiptEvent->id, 'action' => $publicId, 'created_at' => $now, 'updated_at' => $now]);
             $taskId = DB::table('staff_tasks')->insertGetId([
@@ -123,7 +152,7 @@ class RequestController extends Controller
                     'email' => $data['contact']['email'],
                     'phone' => $data['contact']['phone'],
                     'service' => $service->name,
-                    'location' => $data['address']['street']
+                    'location' => $callback ? 'ZIP '.$data['address']['postal_code'].' — call to confirm address and scope.' : $data['address']['street']
                         .(!empty($data['address']['unit']) ? ', '.$data['address']['unit'] : '')
                         .', '.$data['address']['city'].', '.strtoupper($data['address']['region']).' '.$data['address']['postal_code'],
                     'task_status' => 'open',
@@ -132,8 +161,8 @@ class RequestController extends Controller
                 'created_at' => $now,
                 'updated_at' => $now,
             ]);
-            app(\App\Services\LaunchMail::class)->queue('quote-confirmation-'.$publicId,$data['contact']['email'],'We received your cleaning quote request',
-                "Hello ".$data['contact']['name'].",\n\nWe received your free quote request.\nReference: ".$publicId."\nService: ".$service->name."\nCity: ".$data['address']['city']."\nPreferred date: ".($data['preferred_start']??'Not specified')." (".$data['time_zone'].")\n\nOur team will review scope, pricing and local availability. This is not a confirmed booking, and no payment has been taken.\n\nQuestions? Reply to support@expresscleaningconsult.com or call (281) 972-7712.");
+            if (!empty($data['contact']['email'])) app(\App\Services\LaunchMail::class)->queue('quote-confirmation-'.$publicId,$data['contact']['email'],'We received your cleaning quote request',
+                "Hello ".$data['contact']['name'].",\n\nWe received your free quote request.\nReference: ".$publicId."\nService: ".$service->name."\nZIP: ".$data['address']['postal_code']."\n\nOur team will call you to confirm the address, cleaning details, pricing and availability. This is not a confirmed booking, and no payment has been taken.\n\nQuestions? Reply to support@expresscleaningconsult.com or call (281) 972-7712.");
             app(\App\Services\LeadService::class)->sync($leadId);
             return [
                 'receipt' => ['request_id' => $publicId, 'status' => 'received', 'next_step' => 'scope_review'],
