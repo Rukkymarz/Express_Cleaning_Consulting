@@ -133,6 +133,10 @@ export const quoteIssueSchema = z.object({
   expires_at: z.string().min(1).max(64),
 }).strict();
 
+export const customerLinkSchema = z.object({
+  email: z.string().trim().email().max(255),
+}).strict();
+
 export const bookingPrepareSchema = z.object({
   worker_id: z.number().int().positive(),
   start_at: z.string().min(1).max(64),

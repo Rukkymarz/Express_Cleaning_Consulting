@@ -1,4 +1,8 @@
-export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+const DEFAULT_API_URL = process.env.NODE_ENV === 'production'
+  ? 'https://express-cleaning-edge-api.rukkymarz.workers.dev/api/v1'
+  : 'http://localhost:8000/api/v1';
+
+export const API_URL = process.env.NEXT_PUBLIC_API_URL || DEFAULT_API_URL;
 
 type JsonRequestOptions = {
   session?: boolean;

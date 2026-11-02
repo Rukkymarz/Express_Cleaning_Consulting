@@ -1,6 +1,6 @@
 # Express Cleaning Consult — preview setup and verification
 
-Updated 2026-11-01 (America/Chicago).
+Updated 2026-11-02 (America/Chicago).
 
 This is the active Cloudflare + Neon preview procedure. The `api/` Laravel and
 Railway files remain rollback/reference source. Do not change the custom domain,
@@ -59,6 +59,31 @@ stay untracked.
 | Stripe | Use a sandbox/test account, restricted test key where possible, and a test webhook. | Never issue a live invoice. The amount must come from an accepted stored quote; status changes only from a verified webhook. |
 | Railway | Retain offline services, volume, and backup as the source/rollback boundary. | Do not delete, redeploy, reset, or overwrite. Activate its free plan only after a specific confirmation for the export action. |
 
+## Current preview evidence
+
+The isolated free-tier preview currently uses these resources:
+
+| Resource | Current value |
+| --- | --- |
+| Web Worker | `https://express-cleaning-consult-web.rukkymarz.workers.dev` — deployed version `c6e9fbdc-0b1b-46ff-ac91-adfaf159e8ff` |
+| API Worker | `https://express-cleaning-edge-api.rukkymarz.workers.dev` — deployed version `d7af9938-1f03-4929-b73c-cf80b6f19dc1` |
+| Neon | Project `shiny-water-59739167` (“Express Cleaning Consult Preview”), branch `br-late-dust-b4a5vgve` |
+| Existing synthetic receipts | `01M6DFF6BMNSE451J8X70PB37Z` and `01M6DES1W4D246DY68W6FCHWTN`; each public status remains `received` with one open task and a queued notification |
+
+The API `/up` check reports both service and database `ok`, the catalog route
+returns the seeded services, and the deployed web root returns HTTP 200. The
+mobile quote page was visually checked at 390 by 844 pixels; the state selector
+shows all 50 states plus District of Columbia and submits the two-letter code.
+One additional synthetic browser request is prepared but has not been
+submitted, so it has no receipt and is not verification evidence.
+
+The API Worker currently has only `DATABASE_URL` and `RATE_LIMIT_SALT` secrets.
+`RESEND_API_KEY`, Stripe test credentials/webhook secret, and branch-scoped Neon
+Managed Auth are not configured. Do not expect a queued notification to be
+delivered, an authenticated workflow to work, or any Stripe object to be
+created until those separate gates are completed. Live Stripe remains disabled.
+No Railway customer rows or private uploads have been imported.
+
 ## Configuration
 
 For the web preview build, set:
@@ -103,7 +128,12 @@ events gated separately.
 5. Create the secure `ecc_edge_runtime` login, apply
    `006_runtime_security.sql`, then store only its pooled URL as the Worker
    `DATABASE_URL` secret.
-6. Apply `007_reset_sequences.sql`, then run `008_validate.sql`.
+6. Apply `007_reset_sequences.sql`, `009_fix_idempotent_replay.sql`, and
+   `010_quote_portal_workflow.sql`, then run `008_validate.sql`. Migration 010
+   has executed successfully on the isolated preview, adding the expanded staff
+   lead workflow, exact-email verified-identity customer linking, and
+   ownership-scoped account quote listing. This does not replace the required
+   post-import reconciliation.
 7. Reconcile every table count, receipt, relationship, permission link, and
    recoverable upload inventory against the captured source counts.
 

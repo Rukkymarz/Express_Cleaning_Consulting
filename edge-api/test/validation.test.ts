@@ -3,6 +3,7 @@ import {
   callbackRequestSchema,
   bookingPrepareSchema,
   bookingTransitionSchema,
+  customerLinkSchema,
   isIdempotencyKey,
   isUlid,
   planChangeRequestSchema,
@@ -110,6 +111,12 @@ describe('quote and booking workflow validation', () => {
     }).success).toBe(true);
     expect(bookingTransitionSchema.safeParse({ action: 'complete', quality_confirmed: true }).success).toBe(true);
     expect(bookingTransitionSchema.safeParse({ action: 'charge' }).success).toBe(false);
+  });
+
+  it('accepts only a single verified customer-email link field', () => {
+    expect(customerLinkSchema.safeParse({ email: 'customer@example.test' }).success).toBe(true);
+    expect(customerLinkSchema.safeParse({ email: 'not-an-email' }).success).toBe(false);
+    expect(customerLinkSchema.safeParse({ email: 'customer@example.test', role: 'owner' }).success).toBe(false);
   });
 });
 

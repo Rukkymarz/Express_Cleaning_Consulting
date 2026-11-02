@@ -1,7 +1,7 @@
 # Express Cleaning Consult platform — implementation package
 
-> **Restoration notice (2026-11-01):** the custom domain and Railway API now
-> return Railway's 404 fallback. The Railway/MySQL instructions below describe
+> **Restoration notice (2026-11-02):** the custom domain is unresolved and the
+> Railway API returns its fallback. The Railway/MySQL instructions below describe
 > the preserved legacy baseline, not a currently working deployment. The active
 > zero-cost migration work is tracked in [STATE.md](STATE.md) and
 > [migration/FEATURE_PARITY.md](migration/FEATURE_PARITY.md). Do not deploy or
@@ -18,12 +18,12 @@ photography were invented.
 
 - Customers submit a free quote request. Staff review scope and approve a specific price, date and worker before taking a deposit or full payment.
 - The seed catalog is based on the business handoff. Every seeded market is `request_only`; every service has `instant_eligible=false`; there are no active pricing rules. Payment requires an accepted quote and a staff-prepared booking.
-- The optional `/quotes/preview` logic returns an estimate only after an owner-approved rate and market are enabled. The actual checkout remains quote/assignment gated; it does not silently turn a submitted date into a confirmed booking.
+- The optional `/quotes/preview` logic is a legacy Laravel-only capability and is not ported to the Worker. It returns an estimate only after an owner-approved rate and market are enabled. The actual checkout remains quote/assignment gated; it does not silently turn a submitted date into a confirmed booking.
 - The approved public contact details are `support@expresscleaningconsult.com` and `(281) 972-7712`. The private quote-notification inbox is `expressconsulting92@gmail.com`. Real served ZIPs, service policies, deposit percentage, taxes, and real-time crew capacity still require owner approval.
 - Lead stages are derived from the latest service request, its quote, and booking. The 0–100 score is a deterministic work priority, not a predicted conversion rate. Staff may assign a permitted agent and record disposition/follow-up; stages cannot be manually forced.
 - Every newly saved quote request atomically creates one `quote_review` staff task and one notification record. After returning the receipt, the API dispatches that notice through configured Resend credentials to `QUOTE_NOTIFICATION_TO`; request replays and provider retries use database and provider idempotency controls so the same receipt is not intentionally mailed twice. Provider-ambiguous sends stop in `needs_reconciliation` and are logged. The staff pipeline shows the receipt, contact details, service, location, task status, and notification status.
 - Stripe is disabled by default. The hosted-invoice endpoint only runs when `STRIPE_PAYMENTS_MODE=test` is paired with a Stripe test/restricted-test key. It derives the amount from an accepted quote and prepared booking; only a signature-verified, duplicate-safe webhook can mark it paid or failed. Live mode additionally requires `STRIPE_LIVE_PAYMENTS_ENABLED=true` and must not be enabled until the business rules in this document are approved and sandbox tests pass.
-- The before-and-after gallery renders only entries marked both `published` and `customerApproved` in `web/lib/gallery.ts`. It intentionally shows an honest empty state until original, approved project pairs are supplied.
+- The before-and-after gallery renders only entries marked both `published` and `customerApproved` in `web/lib/gallery.ts`. Five owner-supplied, rights-confirmed matched project pairs are currently published; the review section remains an honest ready state until sourced customer reviews are approved.
 - A completed recurring booking can start a service plan only after staff attest to customer approval. The plan is an operational schedule, not a Stripe subscription. Customer pause/resume/cancel requests wait for staff review and do not charge or cancel any external payment agreement.
 - Booking completion queues one review email after the configured delay, only when a customer explicitly opted into review email. Set a verified HTTPS `REVIEW_URL`, `RESEND_API_KEY`, and a verified `MAIL_FROM_ADDRESS`. Uncertain send outcomes become `needs_reconciliation` and must be checked in Resend before any manual retry. Historical requests lacking consent are suppressed.
 
@@ -37,8 +37,8 @@ photography were invented.
   branch-scoped Neon Managed Auth, Resend outboxes, and Stripe test-invoice
   webhooks. From `edge-api`, run `npm ci`, `npm run check`, `npm test`, and
   `npm run build`; the last command is a Wrangler dry run and does not deploy.
-- Replacement database: apply `migration/neon/001_schema.sql` through
-  `008_validate.sql` in the documented order to an isolated Neon branch after
+- Replacement database: apply the migrations through
+  `010_quote_portal_workflow.sql`, then `008_validate.sql`, in the documented order to an isolated Neon branch after
   importing reconciled rows. Never run these against the preserved MySQL source.
 - Authenticated browser calls stay first-party through `/api/*`; public quote
   and intake calls remain stateless. The replacement frontend does not request a
@@ -61,16 +61,27 @@ The API Railway config runs `php artisan migrate --force` as a pre-deploy comman
 
 ## Verification and remaining release gates
 
-On November 1, 2026, locked frontend dependencies installed successfully. The
+On November 2, 2026, locked frontend dependencies installed successfully. The
 frontend typecheck, tracking test, standard Next.js production build and
 14-public-route runtime smoke test passed. Cloudflare's official vinext checker
 reported 100% compatibility; its production Worker build passed, and a local
 workerd preview returned 200 for all 14 public routes plus the login, account,
 and admin shells with the correct private-page `noindex` header. A hydrated
 browser check confirmed all 50 states and Washington, DC display by full name.
-The edge API passed strict TypeScript, 22 Vitest tests, and a Wrangler dry-run bundle. The PDF
+The edge API passed strict TypeScript, 23 Vitest tests, and a Wrangler dry-run bundle. The PDF
 renderer test confirms structural output and excludes test payments from a live
-balance. These results do not prove a database migration or provider delivery.
+balance.
+
+The isolated preview is deployed at
+`https://express-cleaning-consult-web.rukkymarz.workers.dev` (version
+`c6e9fbdc-0b1b-46ff-ac91-adfaf159e8ff`) and
+`https://express-cleaning-edge-api.rukkymarz.workers.dev` (version
+`d7af9938-1f03-4929-b73c-cf80b6f19dc1`). Neon migration 010 executed
+successfully; API health/catalog checks pass; and receipts
+`01M6DFF6BMNSE451J8X70PB37Z` and `01M6DES1W4D246DY68W6FCHWTN` each resolve with
+one open task and a queued notification. These results do not prove Resend
+delivery, provider-authenticated staff/customer workflows, Stripe sandbox
+behavior, or a production-data migration.
 
 The prepared `Express_Cleaning_Cloudflare_Preview_Source.zip` is still missing.
 Per the owner's latest direction, the intact Git source was used and refined;
@@ -78,6 +89,6 @@ the unavailable archive is still worth comparing if recovered, especially for
 owner-supplied assets. Known absent service-card references were removed rather
 than filled with unverified images.
 
-Production verification must separately record: the deployed web and API revisions; one new synthetic quote receipt; its single linked staff task; Resend provider acceptance and, if possible, inbox delivery; an idempotent replay that creates neither a second task nor a second notice; desktop/mobile and canonical-domain checks; and Stripe sandbox invoice success/failure/duplicate-event results. A Resend status of `sent` means the provider accepted the request, not that inbox delivery was independently observed. Do not enable live Stripe mode or issue a live invoice while these gates remain open.
+Remaining verification must record: a fresh browser-submitted synthetic quote receipt and success message; its single linked staff task; Resend provider acceptance and, if possible, inbox delivery; an idempotent replay that creates neither a second task nor a second notice; provider-authenticated account and permission checks; canonical-domain checks; and Stripe sandbox invoice success/failure/duplicate-event results. A Resend status of `sent` means the provider accepted the request, not that inbox delivery was independently observed. Do not enable live Stripe mode or issue a live invoice while these gates remain open.
 
-The package does not include automatic subscription billing, worker self-service, media upload/review, email unsubscribe management, or a completed operations UI for all roles. Approved before/after photo pairs, verified customer reviews, payment timing/amount/refund rules, and the Square/Jobber reconciliation remain owner decisions. See [SETUP_AND_VERIFICATION.md](SETUP_AND_VERIFICATION.md) for configuration and verification procedures.
+The package does not include automatic subscription billing, worker self-service, media upload/review, email unsubscribe management, or a completed operations UI for all roles. Additional approved project photo pairs, verified customer reviews, payment timing/amount/refund rules, and the Square/Jobber reconciliation remain owner decisions. Five rights-confirmed before/after pairs are already published in the preview. See [SETUP_AND_VERIFICATION.md](SETUP_AND_VERIFICATION.md) for configuration and verification procedures.

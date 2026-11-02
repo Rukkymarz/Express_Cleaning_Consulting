@@ -26,8 +26,9 @@ access, preview quote flow, and rollback plan have all been verified.
 6. In Neon's secure role UI, create a generated-password LOGIN role named
    `ecc_edge_runtime`. Apply `006_runtime_security.sql`. Put that role's pooled
    connection URL only in the Cloudflare `DATABASE_URL` secret.
-7. Apply `007_reset_sequences.sql` and `009_fix_idempotent_replay.sql`, then run
-   `008_validate.sql` and compare its counts with the recorded MySQL counts.
+7. Apply `007_reset_sequences.sql`, `009_fix_idempotent_replay.sql`, and
+   `010_quote_portal_workflow.sql`, then run `008_validate.sql` and compare its
+   counts with the recorded MySQL counts.
 8. Run preview-only quote, replay, staff authorization, email, and Stripe test
    webhook tests before any DNS change.
 

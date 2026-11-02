@@ -2,20 +2,22 @@
 
 ## Current verdict: not ready
 
-Fresh browser checks on 2026-11-01 show Railway's 404 fallback at the homepage,
-`/book`, and the old API `/up` endpoint. The earlier October launch evidence is
-historical and does not establish present availability.
+The isolated replacement preview is deployed and healthy at
+`https://express-cleaning-consult-web.rukkymarz.workers.dev` and
+`https://express-cleaning-edge-api.rukkymarz.workers.dev`. Migration 010 is
+applied to the isolated Neon branch, the API reports service/database health,
+the edge package passes 23 unit tests, and both frontend builds pass. Mobile
+browser QA confirmed the complete 50-state-plus-DC selector, approved contact
+details, and a payment-free quote form. Two earlier synthetic receipts still
+show one open review task and one queued notification each.
 
-No replacement preview has been deployed. The intact frontend now passes the
-normal Next.js build, Cloudflare's 100% vinext compatibility check, a vinext
-Worker build, and local workerd route smoke tests. The hydrated quote form shows
-the complete 50-state-plus-DC selector. The edge API passes strict TypeScript,
-22 unit tests, and a Wrangler dry-run bundle. Production rows/private
-uploads have not been exported, provider accounts and staff identities are not
-configured, database migrations have not executed, and email/Stripe/browser
-workflows have not run against a provider preview. The prepared frontend archive
-is still missing for comparison, while generic campaigns and private media
-remain explicit parity gaps.
+This does **not** make the public site launch-ready. The `www` domain currently
+does not resolve and no DNS cutover has occurred. Production Railway rows and
+private uploads have not been exported. Managed Auth and owner/Christine account
+links are absent; Resend delivery and inbound support-mail routing are not
+verified; no Stripe sandbox is connected; and the freshly prepared synthetic
+browser submission has not yet been sent. Generic campaigns and private media
+also remain explicit parity gaps. Keep live payments disabled.
 
 The authoritative status, blockers, next actions, and no-cutover rule are in
 [STATE.md](STATE.md). Route-by-route readiness is in

@@ -92,6 +92,7 @@ export interface StaffLead {
   assigned_agent_id: number | string | null;
   next_follow_up_at: string | null;
   created_at: string;
+  service_request_id: number | string | null;
   request_receipt: string | null;
   service_name: string | null;
   street: string | null;
@@ -102,6 +103,22 @@ export interface StaffLead {
   task_id: string | null;
   task_status: string | null;
   notification_status: string | null;
+  customer_id: number | string | null;
+  customer_email: string | null;
+  customer_linked: boolean;
+  quote_id: string | null;
+  quote_status: string | null;
+  quote_total_cents: number | string | null;
+  quote_deposit_cents: number | string | null;
+  quote_expires_at: string | null;
+  booking_id: string | null;
+  booking_status: string | null;
+}
+
+export interface LinkedCustomer {
+  customer_id: number | string;
+  customer_email: string;
+  linked: boolean;
 }
 
 export interface StaffInquiry {
@@ -166,6 +183,30 @@ export interface AccountBooking {
   end_at: string;
   time_zone: string;
   balance_due_cents: number | string;
+}
+
+export interface AccountQuoteItem {
+  description: string;
+  quantity: number | string;
+  unit_cents: number | string;
+  total_cents: number | string;
+}
+
+export interface AccountQuote {
+  quote_id: string;
+  status: string;
+  revision: number | string;
+  currency: string;
+  subtotal_cents: number | string;
+  tax_cents: number | string;
+  total_cents: number | string;
+  deposit_cents: number | string;
+  expires_at: string;
+  accepted_at: string | null;
+  request_receipt: string;
+  service_name: string;
+  location: string;
+  items: AccountQuoteItem[] | string;
 }
 
 export interface AccountBookingDetail {
@@ -316,6 +357,19 @@ export async function updateStaffLead(
 export async function assignStaffLead(env: Env, authUserId: string, leadId: number, agentId: number): Promise<void> {
   const sql = sqlFor(env);
   await sql`select app.staff_assign_lead(${authUserId}, ${leadId}, ${agentId})`;
+}
+
+export async function linkStaffCustomer(
+  env: Env,
+  authUserId: string,
+  leadId: number,
+  customerEmail: string,
+): Promise<LinkedCustomer> {
+  const sql = sqlFor(env);
+  const rows = await sql`select * from app.staff_link_customer(${authUserId}, ${leadId}, ${customerEmail})`;
+  const customer = (rows as unknown as LinkedCustomer[])[0];
+  if (!customer?.customer_id) throw new Error('Customer linking returned no account.');
+  return customer;
 }
 
 export async function updateStaffTask(env: Env, authUserId: string, taskId: string, status: string): Promise<Record<string, unknown>> {
@@ -528,6 +582,12 @@ export async function listAccountBookings(
   const sql = sqlFor(env);
   const rows = await sql`select * from app.account_list_bookings(${authUserId}, ${cursorId}, ${limit})`;
   return rows as unknown as AccountBooking[];
+}
+
+export async function listAccountQuotes(env: Env, authUserId: string): Promise<AccountQuote[]> {
+  const sql = sqlFor(env);
+  const rows = await sql`select * from app.account_list_quotes(${authUserId})`;
+  return rows as unknown as AccountQuote[];
 }
 
 export async function getAccountBooking(

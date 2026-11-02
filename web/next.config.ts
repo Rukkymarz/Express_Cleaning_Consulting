@@ -1,5 +1,8 @@
 import type { NextConfig } from 'next';
-const configuredApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+const configuredApiUrl = process.env.NEXT_PUBLIC_API_URL
+  || (process.env.NODE_ENV === 'production'
+    ? 'https://express-cleaning-edge-api.rukkymarz.workers.dev/api/v1'
+    : 'http://localhost:8000/api/v1');
 const apiOrigin = new URL(configuredApiUrl).origin;
 const vinextLifecycle = process.env.npm_lifecycle_event?.endsWith(':vinext') ?? false;
 const nextConfig: NextConfig = {

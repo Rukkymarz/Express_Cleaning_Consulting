@@ -23,11 +23,13 @@ import {
   getStaffContext,
   holdStaffTestInvoiceForReconciliation,
   issueStaffQuote,
+  linkStaffCustomer,
   listAccountBookings,
   listAccountInvoiceItems,
   listAccountPayments,
   listAccountPendingPlanChanges,
   listAccountPlans,
+  listAccountQuotes,
   listStaffInquiries,
   listStaffLeads,
   listStaffProspects,
@@ -56,6 +58,7 @@ import {
   callbackRequestSchema,
   bookingPrepareSchema,
   bookingTransitionSchema,
+  customerLinkSchema,
   isIdempotencyKey,
   isUlid,
   issueMap,
@@ -179,6 +182,7 @@ function staffDatabaseError(error: unknown): never {
       || lower.includes('another quote is already accepted') || lower.includes('booking already exists')
       || lower.includes('worker is not approved') || lower.includes('worker is already assigned')
       || lower.includes('customer account must be verified') || lower.includes('quote must be accepted before booking')
+      || lower.includes('verified invited customer account') || lower.includes('different customer account')
       || lower.includes('transition is not allowed') || lower.includes('a plan change is already pending')
       || lower.includes('this change is unavailable') || lower.includes('a completed recurring service')
       || lower.includes('plan state changed') || lower.includes('already resolved differently')) {
@@ -189,6 +193,7 @@ function staffDatabaseError(error: unknown): never {
       || lower.includes('moved to the lead pipeline') || lower.includes('verified customer email')
       || lower.includes('no approved amount') || lower.includes('invalid quote')
       || lower.includes('invalid booking') || lower.includes('quality review must be confirmed')
+      || lower.includes('customer account email must match') || lower.includes('enter the verified customer account email')
       || lower.includes('invalid plan change') || lower.includes('invalid recurring plan')
       || lower.includes('invalid plan resolution') || lower.includes('declined change cannot set')) {
     throw new HTTPException(422, { message: firstLine || 'The update is invalid.' });
@@ -301,6 +306,37 @@ app.get('/api/v1/account/bookings', async (c) => {
         balance_due_cents: Number(booking.balance_due_cents),
       })),
       next_cursor: hasMore && page.length ? accountCursorFor(page[page.length - 1] as AccountBooking) : null,
+    });
+  } catch (error) { staffDatabaseError(error); }
+});
+
+app.get('/api/v1/account/quotes', async (c) => {
+  const { authUserId } = await accountIdentity(c);
+  try {
+    const rows = await listAccountQuotes(c.env, authUserId);
+    return c.json({
+      data: rows.map(({ quote_id: publicId, items: rawItems, ...quote }) => {
+        const parsedItems = typeof rawItems === 'string' ? JSON.parse(rawItems) as unknown : rawItems;
+        const items = Array.isArray(parsedItems) ? parsedItems.map((raw) => {
+          const item = raw && typeof raw === 'object' ? raw as Record<string, unknown> : {};
+          return {
+            description: typeof item.description === 'string' ? item.description : '',
+            quantity: Number(item.quantity ?? 0),
+            unit_cents: Number(item.unit_cents ?? 0),
+            total_cents: Number(item.total_cents ?? 0),
+          };
+        }) : [];
+        return {
+          ...quote,
+          public_id: publicId,
+          revision: Number(quote.revision),
+          subtotal_cents: Number(quote.subtotal_cents),
+          tax_cents: Number(quote.tax_cents),
+          total_cents: Number(quote.total_cents),
+          deposit_cents: Number(quote.deposit_cents),
+          items,
+        };
+      }),
     });
   } catch (error) { staffDatabaseError(error); }
 });
@@ -433,6 +469,10 @@ app.get('/api/v1/admin/leads', async (c) => {
       id: Number(lead.id),
       lead_score: Number(lead.lead_score),
       assigned_agent_id: lead.assigned_agent_id === null ? null : Number(lead.assigned_agent_id),
+      service_request_id: lead.service_request_id === null ? null : Number(lead.service_request_id),
+      customer_id: lead.customer_id === null ? null : Number(lead.customer_id),
+      quote_total_cents: lead.quote_total_cents === null ? null : Number(lead.quote_total_cents),
+      quote_deposit_cents: lead.quote_deposit_cents === null ? null : Number(lead.quote_deposit_cents),
     }));
     return c.json({ data: normalized, next_cursor: hasMore && page.length ? cursorFor(page[page.length - 1] as StaffLead) : null });
   } catch (error) { staffDatabaseError(error); }
@@ -474,6 +514,27 @@ app.patch('/api/v1/admin/leads/:leadId/assignment', async (c) => {
   try {
     await assignStaffLead(c.env, authUserId, leadId, agentId);
     return c.json({ agent_id: agentId });
+  } catch (error) { staffDatabaseError(error); }
+});
+
+app.post('/api/v1/admin/leads/:leadId/customer-link', async (c) => {
+  const { authUserId } = await staffIdentity(c);
+  const leadId = positiveInteger(c.req.param('leadId'));
+  if (!leadId) return c.json({ message: 'Lead ID is invalid.' }, 422);
+  const raw = await bodyText(c, 2_048);
+  let body: unknown;
+  try { body = JSON.parse(raw); } catch { return c.json({ message: 'Request body must be valid JSON.' }, 400); }
+  const parsed = customerLinkSchema.safeParse(body);
+  if (!parsed.success) {
+    return c.json({ message: 'Enter the verified invited customer email.', errors: issueMap(parsed.error) }, 422);
+  }
+  try {
+    const customer = await linkStaffCustomer(c.env, authUserId, leadId, parsed.data.email.toLowerCase());
+    return c.json({
+      customer_id: Number(customer.customer_id),
+      customer_email: customer.customer_email,
+      linked: customer.linked,
+    }, customer.linked ? 201 : 200);
   } catch (error) { staffDatabaseError(error); }
 });
 

@@ -37,16 +37,20 @@ All records are DNS-only and use a 3,600-second TTL.
 
 The two old GoDaddy parking A records (`15.197.225.128` and `3.33.251.168`)
 were intentionally not copied. The removed Railway `www` record and its
-verification TXT record were also not recreated.
+verification TXT record were also not recreated. As of 2026-11-02,
+`www.expresscleaningconsult.com` does not resolve; that is an open launch gate,
+not evidence that the preview Workers are attached to the domain.
 
 ## Mail gate
 
 The current public zone has no MX record. That means the public address
 `support@expresscleaningconsult.com` cannot receive inbound mail even though
-the website displays it. Before cutover, configure an owner-approved inbox or
-Cloudflare Email Routing destination and verify a real inbound reply. Do not
-assume the internal notification address is also the desired support-mail
-destination without owner confirmation.
+the website displays it. The owner has authorized forwarding that public
+address to `expressconsulting92@gmail.com`. A Cloudflare Email Routing
+destination (`0b9feb0cd5c4475799b37728af523395`) has been created and its
+verification email sent, but the destination is not yet verified. Routing and
+MX activation also remain blocked until the Cloudflare zone is active. Verify
+the destination and a real inbound reply before cutover.
 
 The Resend records above cover sending authentication only. A restricted
 server-side Resend API key is still required in the API Worker, and delivery to
@@ -56,8 +60,8 @@ server-side Resend API key is still required in the API Worker, and delivery to
 
 1. Finish Resend delivery/replay, staff auth, production data reconciliation,
    and rollback checks on the `workers.dev` preview.
-2. Configure and verify inbound support-mail routing while the Cloudflare zone
-   is still pending where possible; preserve every required provider record.
+2. Verify the existing Cloudflare Email Routing destination, then preserve its
+   required MX/routing records when the zone becomes active.
 3. At GoDaddy, verify DNSSEC/DS state, then replace only the authoritative
    nameservers with the two Cloudflare nameservers shown above.
 4. Wait for the Cloudflare zone to become active and verify all preserved DNS

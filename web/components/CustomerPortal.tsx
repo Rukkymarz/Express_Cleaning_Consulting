@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { jsonRequest } from '@/lib/api';
+import CustomerQuotes from '@/components/CustomerQuotes';
 
 type Booking = { public_id:string; status:string; start_at:string; time_zone:string; balance_due_cents:number };
 type Plan = { id:number; public_id:string; frequency:string; status:string; next_service_on:string|null; booking_id:string };
@@ -42,7 +43,7 @@ export default function CustomerPortal() {
     {loading&&<p role="status" className="mt-8">Loading account…</p>}
     {error&&<p role="alert" className="mt-7 rounded-lg bg-red-50 p-4 text-red-700">{error} <Link href="/login" className="underline">Sign in</Link></p>}
     {message&&<p role="status" className="mt-7 rounded-lg bg-[#EAF5F2] p-4 text-ocean">{message}</p>}
-    {!loading&&!error&&<div className="mt-10 grid gap-9 lg:grid-cols-[1.3fr_.7fr]">
+    {!loading&&!error&&<><div className="mt-10"><CustomerQuotes /></div><div className="mt-10 grid gap-9 lg:grid-cols-[1.3fr_.7fr]">
       <section aria-labelledby="bookings-title"><h2 id="bookings-title" className="text-2xl font-bold">Bookings and invoices</h2>
         {bookings.length===0?<p className="mt-5 rounded-2xl border border-platinum bg-white p-6">No confirmed bookings yet. A new quote request appears here after the team approves and schedules it.</p>:
           <ul className="mt-5 grid gap-4">{bookings.map(b=><li key={b.public_id} className="rounded-2xl border border-platinum bg-white p-6">
@@ -65,6 +66,6 @@ export default function CustomerPortal() {
           </li>})}</ul>}
         <p className="mt-4 text-sm text-slate-600">Changes take effect after our team confirms them. This plan does not authorize automatic card charges.</p>
       </section>
-    </div>}
+    </div></>}
   </main>;
 }

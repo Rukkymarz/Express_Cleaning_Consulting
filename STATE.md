@@ -1,21 +1,26 @@
 # Express Cleaning Consult — restoration state
 
-Updated 2026-11-01 (America/Chicago).
+Updated 2026-11-02 (America/Chicago).
 
 ## Verdict
 
-**Outage confirmed; the replacement source now builds locally; provider and
-data setup are still required before a preview, and DNS cutover is not ready.**
-A fresh browser check on 2026-11-01 returned Railway's `404 Not
-Found` fallback for all three launch-critical URLs:
+**The isolated Cloudflare + Neon preview is operational, but the public custom
+domain is not restored and DNS cutover is not ready.** The legacy Railway
+deployment remains offline. The old API returns Railway's fallback, while
+`www.expresscleaningconsult.com` currently does not resolve:
 
 - `https://www.expresscleaningconsult.com/`
 - `https://www.expresscleaningconsult.com/book`
 - `https://api-production-c5c6f.up.railway.app/up`
 
-The indexed/cached website copy is not evidence of current availability. The
-custom domain remains unchanged and still points at Railway. No Railway service,
-volume, backup, or production row has been deleted or overwritten.
+The working isolated previews are:
+
+- Web: `https://express-cleaning-consult-web.rukkymarz.workers.dev`
+- API: `https://express-cleaning-edge-api.rukkymarz.workers.dev`
+
+GoDaddy remains authoritative, but the old Railway `www` record is absent. No
+nameserver or live-domain cutover has occurred. No Railway service, volume,
+backup, or production row has been deleted or overwritten.
 
 ## Current target
 
@@ -39,8 +44,14 @@ production data has been copied to either provider.
 
 - Capital deployed for this migration: **$0**.
 - No purchase, paid upgrade, live invoice, or live charge has been made.
-- Cloudflare and Neon preview resources have not yet been provisioned in this
-  workspace/session.
+- Cloudflare Free preview Workers and the isolated Neon Free project
+  `shiny-water-59739167` are provisioned. The deployed Worker versions are API
+  `d7af9938-1f03-4929-b73c-cf80b6f19dc1` and web
+  `c6e9fbdc-0b1b-46ff-ac91-adfaf159e8ff`.
+- Neon migration `010_quote_portal_workflow.sql` executed successfully on the
+  preview branch. The API health endpoint reports both service and database
+  `ok`. Only `DATABASE_URL` and `RATE_LIMIT_SALT` are configured as API Worker
+  secrets; Resend and Stripe credentials are intentionally absent.
 - Railway shows an expired trial and the web/API/MySQL services offline. Read-only
   inspection found the existing MySQL volume and a 186 MB
   `Pre-Security-Patch Backup`; recoverability is not proven until a logical export
@@ -51,7 +62,7 @@ production data has been copied to either provider.
   present but says the service must be online before data can be inspected or
   exported.
 
-## Source completed locally
+## Source and preview completed
 
 - A Postgres equivalent of the legacy schema, preserving relationships, public
   IDs, permission tables, audit history, provider events, and outboxes.
@@ -91,14 +102,21 @@ production data has been copied to either provider.
 - Missing service-card image references were removed from active CSS rather than
   publishing invented or unverified replacement photography.
 
-The edge package now has a lockfile. Strict TypeScript, 22 Vitest cases, the
+The edge package now has a lockfile. Strict TypeScript, 23 Vitest cases, the
 Wrangler dry-run bundle, the frontend typecheck, standard Next.js production
 build/14-route smoke test, tracking test, vinext compatibility check, Cloudflare
-build, and local workerd route smoke test all pass. The hydrated quote preview
-shows all 50 states and Washington, DC by full name while submitting a validated
-two-letter code. Database execution, provider
-delivery, real account sessions, and end-to-end browser mutations have **not**
-passed and must not be inferred from source or bundle checks.
+build, and local workerd route smoke test all pass. Migration 010 was applied to
+the isolated database, and `/up` plus `/api/v1/catalog` pass on the deployed API.
+The deployed mobile quote page shows all 50 states and Washington, DC by full
+name while submitting a validated two-letter code, the approved public email and
+clickable phone, and no payment control.
+
+Two earlier synthetic preview receipts still resolve with one open review task
+and a queued notification: `01M6DFF6BMNSE451J8X70PB37Z` and
+`01M6DES1W4D246DY68W6FCHWTN`. A fresh synthetic request is prepared in the
+browser but has not been submitted; it therefore is not evidence of the current
+deployment's complete browser mutation. No email delivery, real account session,
+or Stripe sandbox workflow has passed.
 
 ## Blocking gaps
 
@@ -109,31 +127,35 @@ passed and must not be inferred from source or bundle checks.
 2. No Railway customer rows or private uploads have been exported. Starting the
    expired MySQL service long enough to export requires explicit approval for the
    temporary Railway free-plan activation immediately before that action.
-3. Cloudflare/Neon project creation, Resend sender verification, secrets, staff
-   account linking, and Stripe sandbox configuration are not complete.
+3. Branch-scoped Neon Managed Auth is not provisioned. Exact owner and Christine
+   login addresses and their provider identities are not linked, so staff and
+   customer permission flows remain unverified.
 4. Generic campaign delivery and private media operations are not yet ported to
-   the Worker. Customer/account, worker-selection, recurring-plan, invoice,
-   quote, and booking code exists only as unexecuted migration source and still
-   needs database, permission, and browser testing. See
+   the Worker. The quote/account/booking UI and migration source are deployed,
+   but provider-authenticated permission, conflict, replay, and browser tests
+   still need to run. See
    [`migration/FEATURE_PARITY.md`](migration/FEATURE_PARITY.md).
-5. The generated Cloudflare deployment helper requires Node 24.22+ for its
-   supported local/CI runtime. This workstation is on Node 24.18; the build and
-   local workerd preview pass, but deployment should use a supported Node patch.
+5. `RESEND_API_KEY` is absent and the existing outbox must be inventoried before
+   enabling dispatch, so no old synthetic notice is sent unexpectedly. The
+   inbound Cloudflare Email Routing destination is still unverified and cannot
+   activate until the zone is active.
+6. No Stripe sandbox is connected and no test key/webhook is configured. The
+   connected Stripe account is live-only and must not be used for migration
+   testing. Live payments remain disabled.
 
 ## Next three actions
 
-1. Sign in to the intended free Cloudflare and Neon accounts. Immediately before
-   creating persistent projects/keys or changing account state, complete the
-   required confirmation and then provision an isolated preview only—never the
-   live domain first.
-2. Explicitly approve the temporary Railway **Free** activation. Then export
+1. With action-time confirmation, submit the prepared synthetic preview request
+   and verify its success message, receipt, one request, one task, and one queued
+   notification. Then provision branch-scoped Managed Auth and link only the
+   exact owner/Christine identities after their login addresses are confirmed.
+2. Configure a restricted Resend key only after the existing outbox is audited,
+   then prove one delivery and no duplicate delivery on replay. Connect a Stripe
+   sandbox separately and test only the approved-quote hosted-invoice workflow.
+3. Explicitly approve the temporary Railway **Free** activation. Then export
    MySQL and private uploads read-only, record source counts, import into the
    isolated Postgres branch, reset sequences, and reconcile every table and
-   relationship before preview testing.
-3. Configure only preview credentials and exact preview origins, link controlled
-   owner/Christine identities to imported users, deploy both Workers to preview
-   URLs, and execute the quote/task/email/replay, auth, portal, and Stripe-test
-   verification matrix before showing any cutover option.
+   relationship before any DNS cutover.
 
 ## Cutover rule
 

@@ -2,17 +2,20 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { jsonRequest } from '@/lib/api';
+import QuoteWorkflowPanel from '@/components/QuoteWorkflowPanel';
 
 type Stage='new_lead'|'quote_requested'|'quote_sent'|'booked'|'completed';
 type TaskStatus='open'|'in_progress'|'completed';
-type Lead={id:number;name:string;email:string|null;phone:string|null;status:string;pipeline_stage:Stage;lead_score:number;assigned_agent_id:number|null;next_follow_up_at:string|null;created_at:string;request_receipt:string|null;service_name:string|null;street:string|null;unit:string|null;city:string|null;region:string|null;postal_code:string|null;task_id:string|null;task_status:TaskStatus|null;notification_status:string|null};
+type Lead={id:number;name:string;email:string|null;phone:string|null;status:string;pipeline_stage:Stage;lead_score:number;assigned_agent_id:number|null;next_follow_up_at:string|null;created_at:string;request_receipt:string|null;service_name:string|null;street:string|null;unit:string|null;city:string|null;region:string|null;postal_code:string|null;task_id:string|null;task_status:TaskStatus|null;notification_status:string|null;service_request_id:number|null;customer_linked:boolean;customer_email:string|null;quote_id:string|null;quote_status:string|null;quote_total_cents:number|null;quote_deposit_cents:number|null;quote_expires_at:string|null;booking_id:string|null;booking_status:string|null};
 type Agent={id:number;name:string;email:string};
+type Worker={id:number;name:string;email:string};
 const stages:Stage[]=['new_lead','quote_requested','quote_sent','booked','completed'];
 const labels:Record<Stage,string>={new_lead:'New lead',quote_requested:'Quote requested',quote_sent:'Quote sent',booked:'Booked',completed:'Completed'};
 
 export default function LeadPipelineBoard() {
   const [stage,setStage]=useState<Stage>('quote_requested');
-  const [leads,setLeads]=useState<Lead[]>([]),[agents,setAgents]=useState<Agent[]>([]);
+  const [leads,setLeads]=useState<Lead[]>([]),[agents,setAgents]=useState<Agent[]>([]),[workers,setWorkers]=useState<Worker[]>([]);
+  const [permissions,setPermissions]=useState<string[]>([]);
   const [cursor,setCursor]=useState<string|null>(null),[search,setSearch]=useState(''),[error,setError]=useState(''),[notice,setNotice]=useState(''),[loading,setLoading]=useState(true);
   const requestSequence=useRef(0);
   const [searchTerm,setSearchTerm]=useState('');
@@ -25,7 +28,7 @@ export default function LeadPipelineBoard() {
     setError('');
     setLeads(old=>next?[...old,...result.data]:result.data);setCursor(result.next_cursor);
   },[stage,searchTerm]);
-  useEffect(()=>{let active=true;setLoading(true);setError('');Promise.all([fetchPage(),jsonRequest<Agent[]>('/admin/agents').then(result=>{if(active)setAgents(result);})]).catch(e=>{if(active)setError(e.message);}).finally(()=>{if(active)setLoading(false);});return()=>{active=false;requestSequence.current++;};},[fetchPage]);
+  useEffect(()=>{let active=true;setLoading(true);setError('');Promise.all([fetchPage(),jsonRequest<Agent[]>('/admin/agents').then(result=>{if(active)setAgents(result);}),jsonRequest<Worker[]>('/admin/workers').then(result=>{if(active)setWorkers(result);}).catch(()=>{if(active)setWorkers([]);}),jsonRequest<{permissions:string[]}>('/session').then(result=>{if(active)setPermissions(result.permissions);})]).catch(e=>{if(active)setError(e.message);}).finally(()=>{if(active)setLoading(false);});return()=>{active=false;requestSequence.current++;};},[fetchPage]);
   useEffect(()=>{const timer=window.setInterval(()=>{if(document.visibilityState==='visible')fetchPage().catch(()=>{});},15000);return()=>clearInterval(timer);},[fetchPage]);
   async function assign(id:number,agent_id:number) {
     setError('');setNotice('');
@@ -48,12 +51,13 @@ export default function LeadPipelineBoard() {
     <p className="mt-3 text-sm text-slate-600">Score ranks follow-up work from contact and request details; it is not a conversion probability.</p>
     {notice&&<p role="status" className="mt-4 text-ocean">{notice}</p>}{error&&<p role="alert" className="mt-4 text-red-700">{error} <Link href="/login" className="underline">Sign in if needed</Link></p>}
     {loading?<p role="status" className="mt-8">Loading leads…</p>:error?<button onClick={()=>{setLoading(true);fetchPage().catch(e=>setError(e.message)).finally(()=>setLoading(false));}} className="mt-6 rounded-xl border border-ocean px-5 py-3 font-bold text-ocean">Retry loading leads</button>:leads.length===0?<p className="mt-8 rounded-2xl border border-platinum bg-white p-7">No leads in this stage.</p>:
-      <ul className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">{leads.map(lead=><li key={lead.id} className="rounded-2xl border border-platinum bg-white p-6">
+      <ul className="mt-6 grid gap-4 lg:grid-cols-2">{leads.map(lead=><li key={lead.id} className="rounded-2xl border border-platinum bg-white p-6">
         <div className="flex justify-between gap-3"><div><h2 className="text-lg font-bold">{lead.name}</h2><p className="mt-1 break-all text-sm text-slate-600">{lead.email||'Email pending'}</p><p className="mt-1 text-sm text-slate-600">{lead.phone?<a href={`tel:${lead.phone}`} className="font-semibold text-ocean underline">{lead.phone}</a>:'Phone pending'}</p></div><span className="h-fit rounded-lg bg-[#EAF5F2] px-3 py-2 text-sm font-bold text-ocean">{lead.lead_score}/100</span></div>
         {lead.request_receipt&&<div className="mt-5 rounded-xl border border-platinum bg-canvas p-4 text-sm"><p><span className="font-semibold">Receipt:</span> <span className="break-all">{lead.request_receipt}</span></p><p className="mt-2"><span className="font-semibold">Service:</span> {lead.service_name||'Not available'}</p><p className="mt-2"><span className="font-semibold">Location:</span> {[lead.street,lead.unit,lead.city,lead.region,lead.postal_code].filter(Boolean).join(', ')}</p><p className="mt-2"><span className="font-semibold">Review task:</span> {lead.task_status?.replaceAll('_',' ')||'Not created'}</p><p className="mt-2"><span className="font-semibold">Email notice:</span> {lead.notification_status?.replaceAll('_',' ')||'Not created'}</p></div>}
         <p className="mt-4 text-sm text-slate-600">Disposition: {lead.status.replaceAll('_',' ')}{lead.next_follow_up_at?` · Follow up ${new Date(lead.next_follow_up_at).toLocaleDateString()}`:''}</p>
         <label htmlFor={`agent-${lead.id}`} className="mt-5 block text-sm font-semibold">Assigned agent</label><select id={`agent-${lead.id}`} value={lead.assigned_agent_id??''} onChange={e=>e.target.value&&assign(lead.id,Number(e.target.value))} className="mt-2 w-full rounded-xl border border-platinum-dark p-3"><option value="">Unassigned</option>{agents.map(a=><option key={a.id} value={a.id}>{a.name}</option>)}</select>
         <div className="mt-4 flex flex-wrap gap-3"><button onClick={()=>markFollowUp(lead.id)} className="font-bold text-ocean underline underline-offset-4">Mark lead for follow-up</button>{lead.task_id&&lead.task_status!=='completed'&&<button onClick={()=>updateTask(lead.task_id!,lead.task_status==='open'?'in_progress':'completed')} className="font-bold text-ocean underline underline-offset-4">{lead.task_status==='open'?'Start review':'Complete review'}</button>}</div>
+        {lead.service_request_id&&(permissions.includes('quotes.issue')||permissions.includes('bookings.dispatch'))&&<QuoteWorkflowPanel lead={lead} workers={workers} canIssue={permissions.includes('quotes.issue')} canDispatch={permissions.includes('bookings.dispatch')} onChanged={()=>fetchPage()} />}
       </li>)}</ul>}
     {cursor&&<button onClick={()=>fetchPage(cursor).catch(e=>setError(e.message))} className="mt-6 rounded-xl border border-ocean px-5 py-3 font-bold text-ocean">Load more</button>}
   </section>;
