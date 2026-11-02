@@ -47,7 +47,7 @@ production data has been copied to either provider.
 - Cloudflare Free preview Workers and the isolated Neon Free project
   `shiny-water-59739167` are provisioned. The deployed Worker versions are API
   `d7af9938-1f03-4929-b73c-cf80b6f19dc1` and web
-  `c6e9fbdc-0b1b-46ff-ac91-adfaf159e8ff`.
+  `a5e6df95-637f-479e-ae3e-8d32bcd37378`.
 - Neon migrations through `010_quote_portal_workflow.sql` executed successfully
   on the preview branch. Migration `011_resend_delivery_events.sql` is source
   complete but has **not** been applied. It must run before the related Worker
@@ -124,8 +124,8 @@ build/14-route smoke test, tracking test, vinext compatibility check, Cloudflare
 build, and local workerd route smoke test all pass. The recovery cron is hourly,
 not every minute, so an idle Neon Free database can scale to zero. Migration 010
 was applied to the isolated database, and `/up` plus `/api/v1/catalog` pass on
-the deployed API. Migration 011 is tested locally but remains unapplied and
-undeployed.
+the deployed API. The frontend improvements are deployed; migration 011 and its
+API webhook source are tested locally but remain unapplied and undeployed.
 The deployed mobile quote page shows all 50 states and Washington, DC by full
 name while submitting a validated two-letter code, the approved public email and
 clickable phone, and no payment control.

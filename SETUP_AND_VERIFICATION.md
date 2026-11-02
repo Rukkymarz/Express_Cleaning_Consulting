@@ -65,7 +65,7 @@ The isolated free-tier preview currently uses these resources:
 
 | Resource | Current value |
 | --- | --- |
-| Web Worker | `https://express-cleaning-consult-web.rukkymarz.workers.dev` — deployed version `c6e9fbdc-0b1b-46ff-ac91-adfaf159e8ff` |
+| Web Worker | `https://express-cleaning-consult-web.rukkymarz.workers.dev` — deployed version `a5e6df95-637f-479e-ae3e-8d32bcd37378` |
 | API Worker | `https://express-cleaning-edge-api.rukkymarz.workers.dev` — deployed version `d7af9938-1f03-4929-b73c-cf80b6f19dc1` |
 | Neon | Project `shiny-water-59739167` (“Express Cleaning Consult Preview”), branch `br-late-dust-b4a5vgve` |
 | Existing synthetic receipts | `01M6DFF6BMNSE451J8X70PB37Z` and `01M6DES1W4D246DY68W6FCHWTN`; each public status remains `received` with one open task and a queued notification |
