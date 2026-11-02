@@ -1,19 +1,23 @@
-# October 16 launch verification
+# Launch readiness
 
-The release is live. The current deployment evidence and remaining gates are maintained in STATE.md.
+## Current verdict: not ready
 
+Fresh browser checks on 2026-11-01 show Railway's 404 fallback at the homepage,
+`/book`, and the old API `/up` endpoint. The earlier October launch evidence is
+historical and does not establish present availability.
 
-- GitHub Actions frontend typecheck, tracking consent/dedup checks, production build and full Laravel suite passed before merge; main checks also passed.
-- Committed release files and all eleven WebP assets were downloaded and hash-compared with the prepared release.
-- Live browser quote succeeded with receipt 01M52G8GMPM4H5SZEVYQRD2AD8. Synthetic name/address and owner-approved staff inbox; no payment or service booking.
-- Live discount intake displayed FIRSTCLEAN10 and queued its offer email. Ongoing marketing consent remained unchecked.
-- ZIP prefill, state selector, new public pages, real gallery image loading and desktop overflow checked. Unauthenticated admin inquiries returned a sign-in message and no records.
-- The labeled quote test and owner-email discount test were retained. No deletion was attempted.
+No replacement preview has been deployed. The intact frontend now passes the
+normal Next.js build, Cloudflare's 100% vinext compatibility check, a vinext
+Worker build, and local workerd route smoke tests. The hydrated quote form shows
+the complete 50-state-plus-DC selector. The edge API passes strict TypeScript,
+22 unit tests, and a Wrangler dry-run bundle. Production rows/private
+uploads have not been exported, provider accounts and staff identities are not
+configured, database migrations have not executed, and email/Stripe/browser
+workflows have not run against a provider preview. The prepared frontend archive
+is still missing for comparison, while generic campaigns and private media
+remain explicit parity gaps.
 
-## Still needs external input or verification
-- Real GA4 measurement and Meta Pixel IDs; tracking remains inert without valid IDs and optional consent.
-- Confirmed partner cities/ZIP coverage before activating city pages.
-- Inbox delivery of queued quote/offer mail has not been independently verified; connected Gmail is not the notification inbox. Do not claim delivered.
-- Authenticated staff inbox review needs an authorized staff session; guest protection passed.
-- No live Stripe charges enabled; payment rules and sandbox completion remain separate.
-- Old Railway project loving-love continues to report a failing unrelated deployment; inspect intended Express Cleaning Consult web/API statuses separately.
+The authoritative status, blockers, next actions, and no-cutover rule are in
+[STATE.md](STATE.md). Route-by-route readiness is in
+[migration/FEATURE_PARITY.md](migration/FEATURE_PARITY.md). Keep Railway
+resources intact and keep DNS unchanged until every critical gate passes.

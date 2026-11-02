@@ -29,7 +29,7 @@ export default function CustomerPortal() {
     finally {setBusy('');}
   }
   async function signOut() {
-    await jsonRequest('/auth/logout',{method:'POST'}).catch(()=>{});
+    await jsonRequest('/auth/sign-out',{method:'POST'}).catch(()=>{});
     window.location.href='/login';
   }
   return <main className="mx-auto max-w-6xl px-5 py-10">

@@ -22,7 +22,9 @@ export default function WebsiteTools() {
   useEffect(() => {
     const controller = new AbortController();
     fetch('/integrations/config', { cache: 'no-store', signal: controller.signal })
-      .then(r => r.ok ? r.json() : null).then(setConfig).catch(() => {});
+      .then(async r => r.ok ? await r.json() as Config : null)
+      .then(setConfig)
+      .catch(() => {});
     return () => controller.abort();
   }, []);
   async function chat() {

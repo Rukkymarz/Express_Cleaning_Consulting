@@ -1,0 +1,10 @@
+DATABASE_URL=postgresql://role:password@host/database?sslmode=require
+RATE_LIMIT_SALT=generate-at-least-32-random-characters
+NEON_AUTH_URL=https://your-branch.neonauth.example/neondb/auth
+CORS_ALLOWED_ORIGINS=http://localhost:3000
+RESEND_API_KEY=re_test_or_live_key
+REVIEW_URL=https://replace-with-an-approved-review-destination.example
+REVIEW_DELAY_HOURS=24
+STRIPE_PAYMENTS_MODE=test
+STRIPE_API_KEY=rk_test_replace_with_a_restricted_test_key
+STRIPE_WEBHOOK_SECRET=whsec_test_secret

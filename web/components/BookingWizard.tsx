@@ -10,12 +10,14 @@ import { services } from '@/lib/catalog';
 import { jsonRequest } from '@/lib/api';
 import { trackQuoteLead } from '@/lib/tracking';
 import { contact, offer } from '@/lib/launch';
+import { US_STATE_CODES, US_STATES } from '@/lib/us-states';
 import Guarantee from './Guarantee';
 
 const schema = z.object({
   name: z.string().trim().min(2, 'Enter your name').max(150),
   phone: z.string().trim().max(32).refine(value => /^\+?[0-9().\s-]+$/.test(value) && /^(?:1)?[2-9]\d{2}[2-9]\d{6}$/.test(value.replace(/\D/g, '')), 'Enter a valid US phone number'),
   service_code: z.string().refine(value => services.some(service => service.code === value), 'Choose a service'),
+  region: z.string().refine(value => US_STATE_CODES.has(value), 'Choose a state'),
   postal_code: z.string().trim().regex(/^\d{5}(-\d{4})?$/, 'Enter a valid ZIP code'),
   email: z.union([z.email('Enter a valid email'), z.literal('')]),
   notes: z.string().trim().max(3000, 'Keep notes under 3,000 characters'),
@@ -33,13 +35,15 @@ export default function BookingWizard() {
   const heading = useRef<HTMLHeadingElement>(null);
   const { register, handleSubmit, setValue, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(schema), mode: 'onBlur',
-    defaultValues: { name: '', phone: '', service_code: '', postal_code: '', email: '', notes: '' },
+    defaultValues: { name: '', phone: '', service_code: '', region: '', postal_code: '', email: '', notes: '' },
   });
   useEffect(() => {
     const code = params.get('service');
     if (code && services.some(service => service.code === code)) setValue('service_code', code);
     const zip = params.get('zip');
     if (zip && /^\d{5}(-\d{4})?$/.test(zip)) setValue('postal_code', zip);
+    const state = params.get('state')?.toUpperCase();
+    if (state && US_STATE_CODES.has(state)) setValue('region', state);
     try { const email = sessionStorage.getItem('ecc_offer_email'); if (email) setValue('email', email); } catch {}
   }, [params, setValue]);
   useEffect(() => { if (receipt) heading.current?.focus(); }, [receipt]);
@@ -54,10 +58,10 @@ export default function BookingWizard() {
       const result = await jsonRequest<{ request_id: string }>('/requests', {
         method: 'POST', headers: { 'Idempotency-Key': requestKey.current },
         body: JSON.stringify({ request_kind: 'callback', service_code: values.service_code,
-          address: { postal_code: values.postal_code },
+          address: { region: values.region, postal_code: values.postal_code },
           contact: { name: values.name, phone: values.phone, email: values.email || null },
           notes: values.notes, promotion_code: requestedOffer() }),
-      }, { csrf: false, networkErrorMessage: `We couldn't confirm your request was received. Please retry, or call ${contact.displayPhone}. Retrying won't create a duplicate request.` });
+      }, { session: false, networkErrorMessage: `We couldn't confirm your request was received. Please retry, or call ${contact.displayPhone}. Retrying won't create a duplicate request.` });
       setReceipt(result.request_id);
       try { trackQuoteLead(result.request_id, values.service_code); } catch { /* Tracking must not interrupt a saved request. */ }
     } catch (error) { setServerError(error instanceof Error ? error.message : 'Please try again or call our team.'); }
@@ -85,6 +89,7 @@ export default function BookingWizard() {
             <div><label htmlFor="quote-name" className={labelClass}>Your name</label><input id="quote-name" autoComplete="name" required maxLength={150} className={inputClass} {...register('name')} {...invalid('name')} />{errorFor('name')}</div>
             <div><label htmlFor="quote-phone" className={labelClass}>Phone number</label><input id="quote-phone" type="tel" autoComplete="tel" required maxLength={32} className={inputClass} {...register('phone')} {...invalid('phone')} />{errorFor('phone')}</div>
             <div><label htmlFor="quote-service" className={labelClass}>Service needed</label><select id="quote-service" required className={inputClass} {...register('service_code')} {...invalid('service_code')}><option value="">Choose a service</option>{services.map(service => <option key={service.code} value={service.code}>{service.name}</option>)}</select>{errorFor('service_code')}</div>
+            <div><label htmlFor="quote-state" className={labelClass}>State</label><select id="quote-state" autoComplete="address-level1" required className={inputClass} {...register('region')} {...invalid('region')}><option value="">Choose a state</option>{US_STATES.map(([code, name]) => <option key={code} value={code}>{name}</option>)}</select>{errorFor('region')}</div>
             <div><label htmlFor="quote-zip" className={labelClass}>ZIP code</label><input id="quote-zip" inputMode="numeric" autoComplete="postal-code" required maxLength={10} className={inputClass} {...register('postal_code')} {...invalid('postal_code')} />{errorFor('postal_code')}</div>
             <div className="sm:col-span-2"><label htmlFor="quote-email" className={labelClass}>Email (optional)</label><input id="quote-email" type="email" autoComplete="email" maxLength={255} className={inputClass} {...register('email')} {...invalid('email')} />{errorFor('email')}</div>
             <div className="sm:col-span-2"><label htmlFor="quote-notes" className={labelClass}>Anything to add? (optional)</label><textarea id="quote-notes" rows={2} maxLength={3000} placeholder="For example, move-out cleaning or a preferred day to call." className={inputClass} {...register('notes')} {...invalid('notes')} /></div>

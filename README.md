@@ -1,6 +1,18 @@
 # Express Cleaning Consult platform — implementation package
 
-Read [ARCHITECTURE.md](ARCHITECTURE.md) first. This package implements the live request-first path plus a broader normalized schema, CRM/quote/dispatch/payment/voice endpoints, a four-step Next.js quote wizard, customer and staff portals, review follow-up job, and deployment configuration. The public quote flow can be deployed independently; the broader operations and payment platform is still gated by the approvals and provider tests below. No prices, guarantee of availability, or payment credentials were invented.
+> **Restoration notice (2026-11-01):** the custom domain and Railway API now
+> return Railway's 404 fallback. The Railway/MySQL instructions below describe
+> the preserved legacy baseline, not a currently working deployment. The active
+> zero-cost migration work is tracked in [STATE.md](STATE.md) and
+> [migration/FEATURE_PARITY.md](migration/FEATURE_PARITY.md). Do not deploy or
+> change DNS from this legacy section.
+
+Read [STATE.md](STATE.md) first for the active restoration. This package retains
+the legacy Laravel/Railway source as rollback/reference while adding a parallel
+Cloudflare Worker + Neon Postgres implementation. The intact Next.js UI is now
+configured for Cloudflare through vinext without removing the normal Next.js
+build. No prices, availability guarantees, credentials, reviews, or project
+photography were invented.
 
 ## Current business behavior
 
@@ -17,14 +29,26 @@ Read [ARCHITECTURE.md](ARCHITECTURE.md) first. This package implements the live 
 
 ## Stack and local commands
 
-- Web: Next.js 16 App Router, React 19, Tailwind 4, React Hook Form/Zod, Framer Motion. From `web`: `npm ci && npm run dev`.
-- API: Laravel 13 on PHP 8.3, MySQL, Sanctum, Spatie Permission, Stripe PHP, Twilio PHP, Resend PHP, Dompdf. From `api`: `composer install`, copy `.env.example` to `.env`, set DB credentials, `php artisan key:generate`, `php artisan migrate --seed`, `php artisan serve --host=0.0.0.0 --port=8000`, and separately `php artisan queue:work database --queue=quote-notifications --tries=3` for quote notices.
-- Approved campaigns require `php artisan schedule:work` (or a Railway cron service running `php artisan schedule:run` every minute). A delivery in `sending` after an uncertain SMS error requires manual provider reconciliation before retrying.
-- Start MySQL separately. Browser-authenticated calls use the web service's same-origin `/api/*` and `/sanctum/*` rewrites to the Railway API, while the public quote stays stateless and calls the API origin directly. Keep `SESSION_DOMAIN` unset so the proxied cookie is host-only, include `www.expresscleaningconsult.com` in `SANCTUM_STATEFUL_DOMAINS`, allow the web origin in CORS, and require HTTPS. `GET /sanctum/csrf-cookie` precedes browser POST login.
-- Test provider callbacks using Stripe CLI and Twilio's test environment; use their exact public webhook URLs and secrets.
-- Staff access `/admin` for the pipeline and `/admin/calls` for the browser phone. Twilio inbound calls route to agents whose browser registered and heartbeated recently; production requires browser microphone permission, configured TwiML endpoints, and agent training. Customers access `/account` for booking history, invoice PDFs and recurring plan change requests. Older bookings created before the invoice migration have no invoice snapshot and need an explicit backfill.
+- Web: Next.js 16 App Router, React 19, Tailwind 4, and Cloudflare vinext.
+  From `web`, run `npm ci`, `npm run typecheck`, `npm run build`, and
+  `npm run build:vinext`. `npm run deploy:vinext` is intentionally not part of
+  local verification because it changes external state.
+- Replacement API: Hono on Cloudflare Workers with hardened Postgres functions,
+  branch-scoped Neon Managed Auth, Resend outboxes, and Stripe test-invoice
+  webhooks. From `edge-api`, run `npm ci`, `npm run check`, `npm test`, and
+  `npm run build`; the last command is a Wrangler dry run and does not deploy.
+- Replacement database: apply `migration/neon/001_schema.sql` through
+  `008_validate.sql` in the documented order to an isolated Neon branch after
+  importing reconciled rows. Never run these against the preserved MySQL source.
+- Authenticated browser calls stay first-party through `/api/*`; public quote
+  and intake calls remain stateless. The replacement frontend does not request a
+  Sanctum CSRF cookie. Staff status comes only from imported database
+  permissions linked to a provider-verified opaque identity.
+- The Laravel 13/MySQL/Sanctum/Twilio code under `api/` remains the historical
+  Railway rollback/reference implementation. Do not treat its deployment map or
+  callbacks as the active migration target.
 
-## Railway service map
+## Preserved Railway service map (historical rollback reference)
 
 | Service | Root | Image/process | Variables |
 |---|---|---|---|
@@ -37,7 +61,22 @@ The API Railway config runs `php artisan migrate --force` as a pre-deploy comman
 
 ## Verification and remaining release gates
 
-On September 30, 2026, a clean verification copy of the current web source passed `npm ci`, `npm run typecheck`, and a production `npm run build`. The in-place `web/node_modules` directory is locked by a local Windows/OneDrive process, so a second in-place `npm ci` returned `EBUSY`; no generated verification files were committed. PHP and Composer are not available in this workspace, so the changed Laravel migrations and feature suite were not rerun locally for this release; the Railway pre-deploy migration and application deployment must succeed before the new API behavior is considered live. The feature suite contains coverage for quote task/notification creation, idempotent request replay, queue recovery and provider-idempotency expiry, hosted-invoice authorization and idempotency, live-key rejection, and Stripe invoice webhook success, failure, duplicate, ordering, refund, amount/currency, and environment checks, but the code is not evidence that those tests ran here.
+On November 1, 2026, locked frontend dependencies installed successfully. The
+frontend typecheck, tracking test, standard Next.js production build and
+14-public-route runtime smoke test passed. Cloudflare's official vinext checker
+reported 100% compatibility; its production Worker build passed, and a local
+workerd preview returned 200 for all 14 public routes plus the login, account,
+and admin shells with the correct private-page `noindex` header. A hydrated
+browser check confirmed all 50 states and Washington, DC display by full name.
+The edge API passed strict TypeScript, 22 Vitest tests, and a Wrangler dry-run bundle. The PDF
+renderer test confirms structural output and excludes test payments from a live
+balance. These results do not prove a database migration or provider delivery.
+
+The prepared `Express_Cleaning_Cloudflare_Preview_Source.zip` is still missing.
+Per the owner's latest direction, the intact Git source was used and refined;
+the unavailable archive is still worth comparing if recovered, especially for
+owner-supplied assets. Known absent service-card references were removed rather
+than filled with unverified images.
 
 Production verification must separately record: the deployed web and API revisions; one new synthetic quote receipt; its single linked staff task; Resend provider acceptance and, if possible, inbox delivery; an idempotent replay that creates neither a second task nor a second notice; desktop/mobile and canonical-domain checks; and Stripe sandbox invoice success/failure/duplicate-event results. A Resend status of `sent` means the provider accepted the request, not that inbox delivery was independently observed. Do not enable live Stripe mode or issue a live invoice while these gates remain open.
 

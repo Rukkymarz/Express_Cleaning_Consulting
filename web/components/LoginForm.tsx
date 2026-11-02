@@ -7,7 +7,11 @@ export default function LoginForm() {
   async function login(e:React.FormEvent<HTMLFormElement>) {
     e.preventDefault(); setBusy(true); setError('');
     const data=new FormData(e.currentTarget);
-    try { const result = await jsonRequest<{redirect_to?:string}>('/auth/login',{method:'POST',body:JSON.stringify({email:data.get('email'),password:data.get('password')})}); window.location.replace(result.redirect_to === '/admin' ? '/admin' : '/account'); }
+    try {
+      await jsonRequest('/auth/sign-in/email',{method:'POST',body:JSON.stringify({email:String(data.get('email')||''),password:String(data.get('password')||''),rememberMe:true})});
+      const session = await jsonRequest<{redirect_to:'/admin'|'/account'}>('/session');
+      window.location.replace(session.redirect_to);
+    }
     catch(e) { setError(e instanceof Error?e.message:'Unable to sign in'); }
     finally {setBusy(false);}
   }

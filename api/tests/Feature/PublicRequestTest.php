@@ -94,7 +94,7 @@ class PublicRequestTest extends TestCase
         $this->createService();
         $payload = [
             'request_kind' => 'callback', 'service_code' => 'RES-STD',
-            'address' => ['postal_code' => '30301'],
+            'address' => ['region' => 'GA', 'postal_code' => '30301'],
             'contact' => ['name' => 'Callback Test', 'phone' => '(404) 555-0100'],
             'notes' => 'Please call about a move-out clean.',
         ];
@@ -103,7 +103,7 @@ class PublicRequestTest extends TestCase
         $first->assertStatus(202)->assertJsonPath('workflow.task_status', 'open');
         $sr = DB::table('service_requests')->where('public_id', $first->json('request_id'))->first();
         $this->assertDatabaseHas('leads', ['id' => $sr->lead_id, 'phone' => '(404) 555-0100', 'email' => null]);
-        $this->assertDatabaseHas('addresses', ['id' => $sr->address_id, 'postal_code' => '30301', 'street' => null, 'city' => null, 'region' => null]);
+        $this->assertDatabaseHas('addresses', ['id' => $sr->address_id, 'postal_code' => '30301', 'street' => null, 'city' => null, 'region' => 'GA']);
         $this->assertNull($sr->pets_on_site);
         $this->assertNull($sr->frequency);
         $this->assertNull($sr->time_zone);
@@ -112,7 +112,7 @@ class PublicRequestTest extends TestCase
         $this->assertSame(0, DB::table('consents')->where('lead_id', $sr->lead_id)->where('granted', true)->count());
         $this->assertDatabaseCount('launch_mail_outbox', 0);
         $notice = json_decode(DB::table('quote_request_notifications')->value('payload'), true);
-        $this->assertStringContainsString('ZIP 30301', $notice['location']);
+        $this->assertStringContainsString('GA 30301', $notice['location']);
         $this->assertSame('(404) 555-0100', $notice['phone']);
         $this->assertSame('Not provided — call customer', $notice['email']);
         config()->set('services.quote_notifications', [
@@ -137,15 +137,16 @@ class PublicRequestTest extends TestCase
         Bus::fake();
         $this->createService();
         $payload = ['request_kind' => 'callback', 'service_code' => 'RES-STD',
-            'address' => ['postal_code' => '30301'],
+            'address' => ['region' => 'GA', 'postal_code' => '30301'],
             'contact' => ['name' => 'Callback Test', 'phone' => '4045550100', 'email' => 'callback@example.test']];
         $this->postJson('/api/v1/requests', $payload, $this->headers('callback-email'))->assertStatus(202);
         $this->assertDatabaseHas('launch_mail_outbox', ['recipient' => 'callback@example.test']);
         $this->assertDatabaseCount('launch_mail_outbox', 1);
         $payload['contact']['phone'] = 'not a number';
+        $payload['address']['region'] = 'XX';
         $payload['address']['postal_code'] = 'ZIP';
         $this->postJson('/api/v1/requests', $payload, $this->headers('callback-invalid'))
-            ->assertStatus(422)->assertJsonValidationErrors(['contact.phone', 'address.postal_code']);
+            ->assertStatus(422)->assertJsonValidationErrors(['contact.phone', 'address.region', 'address.postal_code']);
         $this->assertDatabaseCount('leads', 1);
     }
 

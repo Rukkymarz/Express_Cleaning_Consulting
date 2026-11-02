@@ -46,6 +46,7 @@ class RequestController extends Controller
         return [
             'request_kind' => 'required|in:callback',
             'service_code' => 'required|string|max:32|exists:service_types,code',
+            'address.region' => ['required','string',Rule::in(self::US_STATE_CODES)],
             'address.postal_code' => ['required', 'string', 'regex:/^\d{5}(-\d{4})?$/'],
             'contact.name' => 'required|string|min:2|max:150',
             'contact.phone' => ['required', 'string', 'max:32', 'regex:/^\+?[0-9().\s-]+$/', function ($attribute, $value, $fail) {
@@ -152,7 +153,7 @@ class RequestController extends Controller
                     'email' => $data['contact']['email'] ?? 'Not provided — call customer',
                     'phone' => $data['contact']['phone'],
                     'service' => $service->name,
-                    'location' => $callback ? 'ZIP '.$data['address']['postal_code'].' — call to confirm address and scope.' : $data['address']['street']
+                    'location' => $callback ? strtoupper($data['address']['region']).' '.$data['address']['postal_code'].' — call to confirm address and scope.' : $data['address']['street']
                         .(!empty($data['address']['unit']) ? ', '.$data['address']['unit'] : '')
                         .', '.$data['address']['city'].', '.strtoupper($data['address']['region']).' '.$data['address']['postal_code'],
                     'task_status' => 'open',
@@ -162,7 +163,7 @@ class RequestController extends Controller
                 'updated_at' => $now,
             ]);
             if (!empty($data['contact']['email'])) app(\App\Services\LaunchMail::class)->queue('quote-confirmation-'.$publicId,$data['contact']['email'],'We received your cleaning quote request',
-                "Hello ".$data['contact']['name'].",\n\nWe received your free quote request.\nReference: ".$publicId."\nService: ".$service->name."\nZIP: ".$data['address']['postal_code']."\n\nOur team will call you to confirm the address, cleaning details, pricing and availability. This is not a confirmed booking, and no payment has been taken.\n\nQuestions? Reply to support@expresscleaningconsult.com or call (281) 972-7712.");
+                "Hello ".$data['contact']['name'].",\n\nWe received your free quote request.\nReference: ".$publicId."\nService: ".$service->name."\nLocation: ".strtoupper($data['address']['region']).' '.$data['address']['postal_code']."\n\nOur team will call you to confirm the address, cleaning details, pricing and availability. This is not a confirmed booking, and no payment has been taken.\n\nQuestions? Reply to support@expresscleaningconsult.com or call (281) 972-7712.");
             app(\App\Services\LeadService::class)->sync($leadId);
             return [
                 'receipt' => ['request_id' => $publicId, 'status' => 'received', 'next_step' => 'scope_review'],

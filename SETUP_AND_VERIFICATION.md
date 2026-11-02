@@ -1,71 +1,159 @@
-# Express Cleaning Consult — integration setup and verification
+# Express Cleaning Consult — preview setup and verification
 
-## Accounts and settings for the owner
+Updated 2026-11-01 (America/Chicago).
 
-Create separate **test/sandbox** credentials first. Add credentials through local untracked `.env` files and Railway variables; never commit or paste them into chat.
+This is the active Cloudflare + Neon preview procedure. The `api/` Laravel and
+Railway files remain rollback/reference source. Do not change the custom domain,
+provider webhooks, or Railway data while the preview gates are open.
 
-| Provider | Link | Configure | Application variables |
-|---|---|---|---|
-| Stripe | [Dashboard](https://dashboard.stripe.com/) | Test sandbox, restricted API key, optional publishable key, signed webhook for `invoice.paid`, `invoice.payment_failed`, `invoice.voided`, `invoice.marked_uncollectible`, plus the existing PaymentIntent/refund events | API: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PAYMENTS_MODE=test`, `STRIPE_LIVE_PAYMENTS_ENABLED=false`; web build: `NEXT_PUBLIC_PAYMENTS_MODE=disabled` until the test flow is intentionally exposed |
-| Twilio | [Console](https://console.twilio.com/) | Voice number, API key, TwiML App; set the App voice request URL and the number's incoming voice URL below | `TWILIO_ACCOUNT_SID`, `TWILIO_API_KEY_SID`, `TWILIO_API_KEY_SECRET`, `TWILIO_AUTH_TOKEN`, `TWILIO_TWIML_APP_SID`, `TWILIO_PHONE_NUMBER` |
-| Resend | [Domains](https://resend.com/domains) · [API keys](https://resend.com/api-keys) | Verify the domain used by `MAIL_FROM_ADDRESS`; quote notices go to the private inbox and review mail needs an honest HTTPS destination | `RESEND_API_KEY`, verified `MAIL_FROM_ADDRESS`, `QUOTE_NOTIFICATION_TO=expressconsulting92@gmail.com`, `STAFF_REVIEW_URL=https://www.expresscleaningconsult.com/admin`, `REVIEW_URL`, optional `REVIEW_DELAY_HOURS` |
-| Railway | [Projects](https://railway.com/dashboard) | Use the existing web and API services plus MySQL; the API container supervises Apache, the quote-notification worker, and its recovery loop | Refer to `README.md` service map and both `.env.example` files |
+## Safety boundary
 
-The current production API origin is `https://api-production-c5c6f.up.railway.app`:
+- Use free-tier, isolated preview resources only. No purchase or live charge is
+  authorized.
+- Quote submission is always free and never calls Stripe.
+- Keep `STRIPE_PAYMENTS_MODE=disabled` by default. Use `test` only in preview;
+  keep `STRIPE_LIVE_PAYMENTS_ENABLED=false`.
+- Never commit `.env`, `.dev.vars`, database URLs, auth settings, Resend keys,
+  Stripe keys, webhook secrets, exports, or customer data.
+- Preserve the Railway volume and `Pre-Security-Patch Backup`. A plan change and
+  temporary database start need an explicit confirmation immediately before the
+  action.
+- The prepared `Express_Cleaning_Cloudflare_Preview_Source.zip` is unavailable.
+  The owner authorized the intact Git source as the current baseline; compare the
+  archive later if recovered, especially before adding any supplied imagery.
 
-| Provider setting | Callback URL |
-|---|---|
-| Stripe signed webhook | `https://api-production-c5c6f.up.railway.app/api/v1/webhooks/stripe` |
-| Twilio TwiML App voice request | `https://api-production-c5c6f.up.railway.app/api/v1/call-center/voice` (POST) |
-| Twilio phone number incoming voice | `https://api-production-c5c6f.up.railway.app/api/v1/webhooks/twilio/incoming` (POST) |
-| Twilio SMS opt-out webhook, if SMS is enabled | `https://api-production-c5c6f.up.railway.app/api/v1/webhooks/twilio/message` (POST) |
+## Reproducible local checks
 
-The frontend obtains an authenticated token at `GET /api/v1/call-center/token`, then the Twilio SDK makes the outbound call through its configured TwiML App. It does not call the signed Twilio voice webhook directly. The callback signatures are checked server-side. Use the actual public HTTPS URL in Twilio, since signature validation includes the URL.
+Use Node 24.22 or a newer supported Node 24 patch for the Cloudflare deployment
+helper. The application build also passed on this workstation's Node 24.18, but
+`cf` reports that patch as below its supported engine range.
 
-## Reproducible local steps
-
-```bash
+```text
 cd web
 npm ci
+npm run typecheck
+npm run test:tracking
 npm run build
+npx vinext check
+npm run build:vinext
 
-cd ../api
-composer install
-cp .env.example .env
-php artisan key:generate
-# Add a local MySQL 8 database and fill the DB_* fields in .env.
-php artisan migrate:fresh --seed   # Local disposable database only; destructive.
-php artisan test
-php artisan queue:work database --queue=quote-notifications --sleep=3 --tries=3
-php artisan quote-notifications:recover
+cd ../edge-api
+npm ci
+npm run check
+npm test
+npm run build
 ```
 
-Run the API with `php artisan serve --host=127.0.0.1 --port=8000` and web with `npm run dev` from `web/`. Set the web build's `NEXT_PUBLIC_API_URL` to the absolute Railway API v1 URL; Next derives the upstream origin for its same-origin authenticated `/api/*` and `/sanctum/*` rewrites. On the API, leave `SESSION_DOMAIN` unset, set `SESSION_SECURE_COOKIE=true`, include `www.expresscleaningconsult.com` in `SANCTUM_STATEFUL_DOMAINS`, and allow the web origin in CORS. In the Railway API image, Supervisor runs Apache, the dedicated `quote-notifications` worker, and `quote-notifications:recover` every minute. A separate scheduler is still needed only for unrelated scheduled campaign/review work. Do not run `migrate:fresh` against production; use `php artisan migrate --force` for a reviewed release.
+`web` keeps the ordinary Next.js build and Cloudflare vinext build side by side.
+`edge-api`'s build is `wrangler deploy --dry-run`; neither build command deploys.
+Generated `.next`, `.cloudflare`, `.vinext`, `dist`, and `node_modules` outputs
+stay untracked.
 
-The public quote request is `POST /api/v1/requests`. It requires an `Idempotency-Key` header but does **not** require a Sanctum CSRF cookie, and it never calls Stripe. A new request creates one `quote_review` staff task and one notification record in the same database transaction. The response and `GET /api/v1/requests/{receipt}/status` expose only the opaque receipt plus request, task, and notification statuses; customer PII remains in the protected staff workflow. Replay the same request with the same idempotency key to confirm it returns the original receipt without another task or notice.
+## Preview resources
 
-Quote notifications are queued after the request is committed so mail-provider latency cannot block the receipt. Confirm the API service has `QUEUE_CONNECTION=database`, `RESEND_API_KEY`, a domain-verified `MAIL_FROM_ADDRESS`, `QUOTE_NOTIFICATION_TO=expressconsulting92@gmail.com`, and an HTTPS `STAFF_REVIEW_URL`. The Gmail address is the private notification inbox; the public Contact details are `support@expresscleaningconsult.com` and `(281) 972-7712`. A notification status of `sent` records Resend acceptance; confirm inbox delivery separately when possible. `failed` means configuration was missing, while `needs_reconciliation` means the provider result was ambiguous and must be checked before retrying.
+| Provider | Preview action | Required guardrail |
+| --- | --- | --- |
+| Cloudflare | Create separate web and API Workers on `workers.dev` preview URLs. Use the generated `web/cloudflare.config.ts` and `edge-api/wrangler.jsonc`. | Do not attach `expresscleaningconsult.com` yet. Keep caching and paid image optimization off until measured and approved. |
+| Neon | Create an isolated free Postgres branch and enable branch-scoped Managed Auth. Create `ecc_edge_runtime` as a generated-password LOGIN role through the secure UI. | Do not import into or modify an unrelated project. Add only exact preview/live website origins as trusted auth origins; disable unmanaged public signup at the provider. |
+| Resend | Verify the business sender/domain and create a restricted server-side key. | Public sender/support is `support@expresscleaningconsult.com`; internal quote recipient is `expressconsulting92@gmail.com`. Never put the key in `NEXT_PUBLIC_*`. |
+| Stripe | Use a sandbox/test account, restricted test key where possible, and a test webhook. | Never issue a live invoice. The amount must come from an accepted stored quote; status changes only from a verified webhook. |
+| Railway | Retain offline services, volume, and backup as the source/rollback boundary. | Do not delete, redeploy, reset, or overwrite. Activate its free plan only after a specific confirmation for the export action. |
 
-To create a sandbox hosted invoice, staff first issue and the customer accepts a quote, staff prepare the booking, and an authorized user with `quotes.issue` calls `POST /api/v1/admin/bookings/{bookingPublicId}/payment-invoices` with an idempotency key, `mode` (`deposit`, `full`, or `balance`), and `days_until_due`. The amount always comes from the stored quote. The test payment is stored separately from live payments and cannot schedule the booking. Only a signature-verified Stripe webhook with matching environment, invoice ID, amount, and currency can mark the payment succeeded or failed. Do not set live payment variables until sandbox success, failure, duplicate webhook, refund, and business-policy checks are complete.
+## Configuration
 
-Before enabling live payments, the owner must decide when an approved invoice is sent, whether the customer pays a deposit, the full amount, or a post-service balance, the deposit percentage or minimum, the due-day rule (the API accepts 1–90 days), tax treatment, and cancellation/refund/no-show/partial-payment handling. The current code does not invent those rules.
+For the web preview build, set:
 
-To publish a before/after project, place only original owner-supplied or explicitly approved images under `web/public/gallery/`, then add one paired entry to `web/lib/gallery.ts` with useful captions, distinct alt text, and a source note. It appears only after `published`, customer approval, website-use rights, same-location matching, and sequence verification are all confirmed. Never label stock or AI imagery as completed customer work. Illustrative licensed photography belongs outside the company-results data and must be visibly labeled with any required credit/license.
+```text
+NEXT_PUBLIC_API_URL=https://<api-preview-worker>/api/v1
+NEXT_PUBLIC_SITE_URL=https://<web-preview-worker>
+NEXT_PUBLIC_PAYMENTS_MODE=disabled
+```
 
-The supplied Canva short links could not provide the original assets or reliable source, capture-date, ownership, customer-consent, and license evidence in this environment, so no Canva photo or testimonial content was published. The Ari T, Megan L, and Jonas K quotes remain unpublished because no review source or publication permission was provided. Add a review to `web/lib/reviews.ts` only after verifying its source and permission. The public Instagram grid did not expose the requested pressure-washing post; obtain the exact post URL or original paired files plus website-use confirmation before publishing it. No licensed genuine junk-removal pair was found, so that results slot remains empty.
+Set `NEXT_PUBLIC_PAYMENTS_MODE=test` only while an approved synthetic booking has
+a Stripe-hosted test invoice. There is no browser live-Payment-Element path in
+the replacement frontend.
 
-## Current verification scope — September 30, 2026
+For the API Worker, use non-secret variables for exact preview origins, sender
+address, recipient, review delay, and disabled payment mode. Configure these as
+Cloudflare secrets:
 
-| Gate | Result |
-|---|---|
-| `npm ci` | Pass in a clean verification copy with the committed lockfile. A repeat inside the source directory hit `EBUSY` because the existing `node_modules` is locked by a Windows/OneDrive process. |
-| `npm run typecheck` | Pass for the current frontend in the clean verification copy. |
-| `npm run build` | Pass in the clean verification copy: Next.js compile, TypeScript, and static page generation completed. Existing local build/dependency locks are workstation artifacts rather than application failures. |
-| Authenticated same-origin proxy | Pass against the live API from the local production build: `/sanctum/csrf-cookie` returned host-only CSRF/session cookies through the rewrite, and a synthetic invalid login reached the credential check with HTTP 422 rather than a CSRF 419. Real staff sign-in still requires an authorized account. |
-| PHP migrations and `php artisan test` | Not run in this workspace because PHP, Composer, and Docker are unavailable. The suite includes the new quote notification and Stripe invoice/webhook cases; it must run in an environment with the locked PHP dependencies. |
-| Railway migration/deployment | `api/railway.json` configures `php artisan migrate --force` as a pre-deploy command. A successful Railway release and `/up` response are required to verify it against production MySQL. |
-| Live quote/task/email | Requires a fresh synthetic request after deployment, a same-key replay, status/admin inspection, Resend acceptance, and inbox confirmation if available. Do not infer delivery merely from a successful HTTP response. |
-| Stripe sandbox invoice | Requires a connected Stripe sandbox/test key, signed test webhook, an accepted synthetic quote, a prepared booking, and authorized staff access. Do not test with the connected live account. |
-| Gallery | The responsive component and honest empty state are implemented. Visual job pairs remain intentionally absent until the owner supplies or explicitly approves original before/after photos, captions, and alt text. |
+```text
+DATABASE_URL
+RATE_LIMIT_SALT
+RESEND_API_KEY
+STRIPE_API_KEY
+STRIPE_WEBHOOK_SECRET
+```
 
-Record live-domain, mobile/desktop, synthetic quote, staff task, and notification results in the release handoff after deployment. Live card payments, actual Twilio calling, inbox-level Resend delivery, full production MySQL behavior, and Stripe sandbox invoice handling remain separate gates until the required access, approved business settings, and private credentials are available. Keep the existing Square/Jobber records authoritative until reconciliation and a tested cutover.
+Set branch-specific `NEON_AUTH_URL`. Add the exact web preview origin to
+`CORS_ALLOWED_ORIGINS`, Neon Auth trusted origins, and the staff review URL. Leave
+`REVIEW_URL` unset until the owner approves a real HTTPS destination; review mail
+then remains queued. The API refuses live Stripe keys in test mode and keeps live
+events gated separately.
+
+## Database migration order
+
+1. With specific approval, temporarily start preserved Railway MySQL and make an
+   encrypted logical export plus source row counts. Inventory private uploads
+   separately. Do not alter source rows.
+2. Apply `migration/neon/001_schema.sql` to an empty isolated branch.
+3. Import **data rows only** with explicit MySQL-to-Postgres type/column mapping.
+   Never substitute the source ZIP for customer records.
+4. Apply `002_seed_reference.sql` through `005_staff_workflow.sql` in order.
+5. Create the secure `ecc_edge_runtime` login, apply
+   `006_runtime_security.sql`, then store only its pooled URL as the Worker
+   `DATABASE_URL` secret.
+6. Apply `007_reset_sequences.sql`, then run `008_validate.sql`.
+7. Reconcile every table count, receipt, relationship, permission link, and
+   recoverable upload inventory against the captured source counts.
+
+## Identity setup
+
+Create controlled owner and Christine identities through the provider's invite
+or reset flow. Link each provider opaque user ID to the correct imported
+`users.auth_user_id`. Do not derive staff access from editable profile metadata.
+The frontend uses `/api/v1/auth/sign-in/email`, `/sign-out`, and `/api/v1/session`;
+the latter routes staff or customer accounts only after provider verification and
+database mapping. Test anonymous, unlinked, customer, limited-staff, Christine,
+and owner cases. Public registration must fail at both the proxy and provider.
+
+## Preview verification record
+
+Record URLs, Worker versions, database branch, timestamps, and synthetic IDs for
+each result:
+
+1. Desktop and mobile homepage, service pages, Contact phone/email, gallery,
+   privacy/terms, sitemap, robots, canonical links, and private-page `noindex`.
+2. A new synthetic quote with required name/phone/service/state/ZIP and optional email.
+   Confirm the returned receipt, one saved request, one linked review task, and
+   the staff view's receipt/contact/service/location/task status.
+3. Confirm one Resend provider acceptance and inbox delivery when observable.
+   Replay the exact idempotency key/payload and prove no second task or notice.
+   A provider `sent` state alone is not inbox-delivery evidence.
+4. Exercise every public intake, useful error states, rate limits, and CORS from
+   the exact preview origin.
+5. Sign in/out as each role, expire a session, deny anonymous staff access, deny
+   cross-customer records, and verify booking, invoice PDF, recurring-plan change,
+   lead/task, inquiry, prospect, quote, worker, and booking flows.
+6. In Stripe test mode only, issue one hosted invoice from a synthetic accepted
+   quote/prepared booking. Test success, failure, duplicate, mismatch, replay,
+   and out-of-order signed events. Prove quote submission creates no Stripe
+   object and test payment never advances a live booking.
+7. Verify review-email consent, suppression, retry, and reconciliation with an
+   owner-approved destination, or keep the feature queued if none is approved.
+8. Test rollback to the preserved source plan without changing DNS.
+
+Generic campaign delivery and private media/upload operations remain explicit
+parity gaps. Approved before/after pairs and reviews must retain documented
+source, same-location/sequence verification, customer permission, and website-use
+rights. Do not use stock/AI imagery as completed customer work.
+
+## Cutover
+
+Show the isolated preview to the owner first. Change DNS only after the entire
+feature-parity matrix passes, production counts reconcile, both staff identities
+work, one quote/task/email flow and idempotent replay are proven, mobile/desktop
+QA passes, and rollback is tested. Preserve mail DNS records. Keep Railway
+resources intact through post-cutover acceptance, and leave live Stripe disabled
+until payment timing, deposit/full/balance amount, due date, tax, cancellation,
+refund, no-show, and partial-payment rules receive a separate decision.

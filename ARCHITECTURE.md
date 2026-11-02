@@ -1,5 +1,11 @@
 # Express Cleaning Consult — system architecture
 
+> **Historical baseline notice (2026-11-01):** the Railway/Laravel/MySQL
+> topology in this document is the preserved source architecture, not a current
+> availability claim. Railway is offline. The zero-cost replacement and explicit
+> parity gaps are tracked in [STATE.md](STATE.md) and
+> [migration/FEATURE_PARITY.md](migration/FEATURE_PARITY.md).
+
 **Version:** 1.1 launch baseline · 30 September 2026
 **Audience:** owner, product, engineering, operations  
 **Scope:** a single-business, extensible cleaning operations platform for `expresscleaningconsult.com`. “SaaS” describes the hosted application and its reusable modules; this design does not assume the business is selling software to other cleaning companies.
@@ -39,6 +45,31 @@ flowchart TD
   T --> API
 ```
 
+### Active restoration target
+
+```mermaid
+flowchart TD
+  B[Browser] --> W[Cloudflare web Worker / vinext]
+  W --> A[Cloudflare edge API Worker / Hono]
+  B -->|stateless public form| A
+  A --> N[(Neon Postgres + Managed Auth)]
+  A --> R[Resend]
+  A -->|test mode only| S[Stripe hosted invoice]
+  S -->|signed webhook| A
+```
+
+The web Worker preserves the existing Next.js pages and proxies authenticated
+`/api/*` calls so managed auth cookies remain first-party. Public quote/intake
+calls are stateless. The edge API validates the live provider session, maps its
+opaque user ID to imported database permissions, and exposes only hardened
+security-definer functions through a least-privilege database role. Cloudflare
+and Neon resources must remain isolated previews until import reconciliation and
+the release matrix pass. Resend credentials, database URLs, auth settings, and
+Stripe test secrets are server-side only. Live Stripe remains disabled.
+
+The table and Railway paragraph below document the preserved legacy boundary;
+they are rollback/reference material, not the current deployment target.
+
 | Boundary | Owns | Does not own |
 |---|---|---|
 | Next.js App Router | Server-rendered marketing/SEO pages, client booking wizard, customer/worker/admin interfaces, semantic form and interaction state | Trusted prices, payment state, agent authorization |
@@ -49,7 +80,12 @@ flowchart TD
 | Twilio | Browser calling and carrier delivery | CRM truth or consent decisions |
 | Private object storage | Scope photos and proof of work, with short-lived signed URLs | Public SEO images |
 
-Use the existing Railway `web` and `api` services plus managed MySQL. The API image uses Supervisor to run Apache, a database-queue worker restricted to `quote-notifications`, and a recovery loop that reclaims aged notification outbox rows without repeatedly filling a backed-up queue. Other campaign/review queues require a deliberately configured worker or scheduler and must not duplicate the quote-notification consumer. The public site is `https://www.expresscleaningconsult.com`; the API is `https://api-production-c5c6f.up.railway.app`. Authenticated browser calls go through same-origin Next rewrites (`/api/*` and `/sanctum/*`) so Sanctum cookies belong to the custom web domain; keep the Laravel `SESSION_DOMAIN` unset, include the web host in `SANCTUM_STATEFUL_DOMAINS`, use secure cookies, and keep an exact CORS allowlist. The public quote route remains stateless, calls the API origin directly, and does not fetch a Sanctum CSRF cookie. Laravel serves health endpoints independent of external providers. The API `railway.json` runs `php artisan migrate --force` as a pre-deploy command, not on every web process boot. Railway reads `railway.json` from the service root and builds the configured Dockerfile. [Railway configuration reference](https://docs.railway.com/config-as-code/reference) · [Railway Dockerfiles](https://docs.railway.com/builds/dockerfiles).
+The historical Railway deployment used `web` and `api` services plus managed
+MySQL. Its API image supervised Apache, a quote-notification queue worker, and a
+recovery loop. Authenticated browser calls used `/api/*` and `/sanctum/*`
+rewrites to Laravel Sanctum. That configuration remains in source only for
+recovery comparison; Railway currently returns its 404 fallback and must not be
+presented as live. The replacement does not request a Sanctum CSRF cookie.
 
 ### Composition and accessibility
 
@@ -57,7 +93,7 @@ Server components own SEO, service catalog initial data, the reusable before/aft
 
 ## 3. Data ownership and normalized model
 
-The required six tables are **users, leads, bookings, payments, calls, campaigns**. A functional normalized design also needs `service_types`, `markets`, `addresses`, `service_requests`, `staff_tasks`, `quote_request_notifications`, `quotes`, `quote_items`, `pricing_rules`, `booking_assignments`, `workers`, `media`, `campaign_deliveries`, `consents`, `provider_events`, and `audit_events` (plus Sanctum and Spatie package tables). Each saved request owns one `quote_review` task and one notification record. Amounts are integer USD cents. Timestamps are UTC; booking windows include an IANA time zone. Public IDs are ULIDs; internal foreign keys are indexed. Store one `provider_event` per unique provider event ID to make webhook effects idempotent. Snapshot approved quote items and price-rule version before payment. PII is access controlled and retention scoped.
+The required six tables are **users, leads, bookings, payments, calls, campaigns**. A functional normalized design also needs `service_types`, `markets`, `addresses`, `service_requests`, `staff_tasks`, `quote_request_notifications`, `quotes`, `quote_items`, `pricing_rules`, `booking_assignments`, `workers`, `media`, `campaign_deliveries`, `consents`, `provider_events`, and `audit_events` (plus imported legacy permission tables and provider-managed auth tables). Each saved request owns one `quote_review` task and one notification record. Amounts are integer USD cents. Timestamps are UTC; booking windows include an IANA time zone. Public IDs are ULIDs; internal foreign keys are indexed. Store one `provider_event` per unique provider event ID to make webhook effects idempotent. Snapshot approved quote items and price-rule version before payment. PII is access controlled and retention scoped.
 
 ```mermaid
 erDiagram
@@ -106,7 +142,13 @@ stateDiagram-v2
 
 ## 5. REST contracts (v1)
 
-All JSON endpoints are prefixed `/api/v1`. Error shape: `{ "error": { "code": "...", "message": "...", "fields": { "field": ["..."] } }, "request_id": "..." }`. State-changing client calls require `Idempotency-Key`; rate limit public requests. Protected calls use first-party Sanctum cookies and CSRF. Agent actions also require Spatie permission plus record policy. Pagination is cursor based and filtered queries are indexed.
+All JSON endpoints are prefixed `/api/v1`. State-changing idempotent workflows
+require `Idempotency-Key`; public requests are rate limited. Replacement
+protected calls use a first-party managed session through the web rewrite,
+provider-side session validation, an exact browser-origin allowlist, and imported
+database permissions. The old Sanctum/Spatie request path applies only to the
+historical Laravel implementation. Pagination is cursor based and filtered
+queries are indexed.
 
 | Endpoint | Auth | Input / output and invariant |
 |---|---|---|
@@ -167,7 +209,7 @@ The current review job is queued after a quality-confirmed completion, delayed b
 ## 8. Security, operations and release gates
 
 - Role permissions: owner/admin, sales agent, dispatcher, marketing agent, approved worker and customer; deny by default. Agent notes and customer PII must be restricted; support staff should have only the access necessary for assigned work.
-- Encrypt transport; keep provider keys in Railway secrets; rotate on incident. Never log card data, Twilio tokens, access codes or private photo URLs. Apply upload content/type limits, malware scanning policy, private storage and expiring URLs.
+- Encrypt transport; keep provider keys in Cloudflare secrets and managed provider settings; rotate on incident. Never log card data, access tokens, access codes or private photo URLs. Apply upload content/type limits, malware scanning policy, private storage and expiring URLs.
 - Record consent timestamp/source/version, audit price overrides and status transitions. Rate limit public forms and dialer actions, enforce allowed call destinations, and monitor spend.
 - MySQL backups and tested restore, queue dead-letter/retry procedure, provider webhook replay tooling, database migration rollback plan, health checks, alerts for failed payment/call delivery, and per-service structured logs with request ID.
 - Before enabling paid operations: approve prices and deposit/refund/cancellation terms, confirm served ZIPs and crew capacity, verify domain routing, provision Stripe/Twilio/email credentials, test payment and webhook edge cases, complete privacy/consent copy, run keyboard and mobile checks, and reconcile workbook/Square/Jobber historical records.
