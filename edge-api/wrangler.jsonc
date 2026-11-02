@@ -7,10 +7,10 @@
   "observability": { "enabled": true },
   "triggers": { "crons": ["*/1 * * * *"] },
   "vars": {
-    "CORS_ALLOWED_ORIGINS": "https://www.expresscleaningconsult.com,https://expresscleaningconsult.com",
+    "CORS_ALLOWED_ORIGINS": "https://express-cleaning-consult-web.rukkymarz.workers.dev,https://www.expresscleaningconsult.com,https://expresscleaningconsult.com",
     "MAIL_FROM_ADDRESS": "support@expresscleaningconsult.com",
     "QUOTE_NOTIFICATION_TO": "expressconsulting92@gmail.com",
-    "STAFF_REVIEW_URL": "https://www.expresscleaningconsult.com/admin",
+    "STAFF_REVIEW_URL": "https://express-cleaning-consult-web.rukkymarz.workers.dev/admin",
     "REVIEW_DELAY_HOURS": "24",
     "STRIPE_PAYMENTS_MODE": "disabled",
     "STRIPE_LIVE_PAYMENTS_ENABLED": "false"

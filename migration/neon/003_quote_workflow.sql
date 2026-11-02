@@ -225,7 +225,7 @@ begin
     end if;
     select sr.id into v_request_id from service_requests sr where sr.public_id = v_existing_receipt;
     return query
-      select v_existing_receipt, false, v_request_id, st.status, qn.status
+      select v_existing_receipt, false, v_request_id, st.status::text, qn.status::text
       from staff_tasks st
       join quote_request_notifications qn on qn.staff_task_id = st.id
       where st.service_request_id = v_request_id and st.kind = 'quote_review';
