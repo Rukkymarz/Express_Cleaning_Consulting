@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useMemo, useState } from 'react';
+import { FormEvent, useMemo, useRef, useState } from 'react';
 import { jsonRequest } from '@/lib/api';
 
 type Worker = { id: number; name: string; email: string };
@@ -39,6 +39,7 @@ type InvoiceResult = {
 };
 
 type EditableItem = { description: string; quantity: string; unitDollars: string };
+type PendingMutation = { payload: string; key: string };
 const paymentsMode = process.env.NEXT_PUBLIC_PAYMENTS_MODE === 'test' ? 'test' : 'disabled';
 
 function idempotencyKey(prefix: string): string {
@@ -84,6 +85,8 @@ export default function QuoteWorkflowPanel({ lead, workers, canIssue, canDispatc
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const quoteAttempt = useRef<PendingMutation | null>(null);
+  const invoiceAttempt = useRef<PendingMutation | null>(null);
 
   const activeQuoteId = lead.quote_id || quote?.quote_id;
   const activeQuoteStatus = lead.quote_status || quote?.status;
@@ -124,16 +127,20 @@ export default function QuoteWorkflowPanel({ lead, workers, canIssue, canDispatc
         if (!Number.isInteger(quantity) || quantity < 1) throw new Error(`Line ${index + 1} quantity must be a whole number of at least 1.`);
         return { description: item.description.trim(), quantity, unit_cents: cents(item.unitDollars, `Line ${index + 1} price`) };
       });
+      const body = JSON.stringify({
+        items: preparedItems,
+        tax_cents: cents(taxDollars || '0', 'Tax'),
+        deposit_cents: cents(depositDollars || '0', 'Deposit'),
+        expires_at: expires.toISOString(),
+      });
+      const payload = `${lead.service_request_id}:${body}`;
+      if (!quoteAttempt.current || quoteAttempt.current.payload !== payload) quoteAttempt.current = { payload, key: idempotencyKey('quote') };
       const result = await jsonRequest<QuoteResult>(`/admin/requests/${lead.service_request_id}/quotes`, {
         method: 'POST',
-        headers: { 'Idempotency-Key': idempotencyKey('quote') },
-        body: JSON.stringify({
-          items: preparedItems,
-          tax_cents: cents(taxDollars || '0', 'Tax'),
-          deposit_cents: cents(depositDollars || '0', 'Deposit'),
-          expires_at: expires.toISOString(),
-        }),
+        headers: { 'Idempotency-Key': quoteAttempt.current.key },
+        body,
       });
+      quoteAttempt.current = null;
       setQuote(result);
       setNotice(`Quote ${result.quote_id} issued for ${money(result.total_cents)}. It must be accepted before scheduling.`);
       await onChanged();
@@ -170,11 +177,15 @@ export default function QuoteWorkflowPanel({ lead, workers, canIssue, canDispatc
       if (!['deposit', 'full', 'balance'].includes(invoiceMode)) throw new Error('Choose the approved amount to invoice.');
       const due = Number(daysUntilDue);
       if (!Number.isInteger(due) || due < 1 || due > 90) throw new Error('Invoice due days must be a whole number from 1 to 90.');
+      const body = JSON.stringify({ mode: invoiceMode, days_until_due: due });
+      const payload = `${activeBookingId}:${body}`;
+      if (!invoiceAttempt.current || invoiceAttempt.current.payload !== payload) invoiceAttempt.current = { payload, key: idempotencyKey('test-invoice') };
       const result = await jsonRequest<InvoiceResult>(`/admin/bookings/${activeBookingId}/payment-invoices`, {
         method: 'POST',
-        headers: { 'Idempotency-Key': idempotencyKey('test-invoice') },
-        body: JSON.stringify({ mode: invoiceMode, days_until_due: due }),
+        headers: { 'Idempotency-Key': invoiceAttempt.current.key },
+        body,
       });
+      invoiceAttempt.current = null;
       setInvoice(result);
       setNotice(`Stripe test invoice created for ${money(result.amount_cents, result.currency)}. No live charge was created.`);
       await onChanged();

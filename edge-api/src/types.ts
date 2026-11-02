@@ -4,6 +4,7 @@ export interface Env {
   NEON_AUTH_URL?: string;
   CORS_ALLOWED_ORIGINS?: string;
   RESEND_API_KEY?: string;
+  RESEND_WEBHOOK_SECRET?: string;
   MAIL_FROM_ADDRESS?: string;
   QUOTE_NOTIFICATION_TO?: string;
   STAFF_REVIEW_URL?: string;

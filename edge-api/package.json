@@ -13,6 +13,7 @@
   "dependencies": {
     "@neondatabase/serverless": "1.2.0",
     "hono": "4.13.16",
+    "svix": "2.9.1",
     "ulid": "3.0.2",
     "zod": "4.6.7"
   },

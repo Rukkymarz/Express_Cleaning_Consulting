@@ -8,6 +8,7 @@ type Booking = { public_id:string; status:string; start_at:string; time_zone:str
 type Plan = { id:number; public_id:string; frequency:string; status:string; next_service_on:string|null; booking_id:string };
 type Pending = { service_plan_id:number; action:string };
 type Page<T> = { data:T[]; next_cursor:string|null };
+const paymentsMode=process.env.NEXT_PUBLIC_PAYMENTS_MODE==='test'?'test':'disabled';
 
 export default function CustomerPortal() {
   const [bookings,setBookings]=useState<Booking[]>([]), [plans,setPlans]=useState<Plan[]>([]), [pending,setPending]=useState<Pending[]>([]);
@@ -52,8 +53,9 @@ export default function CustomerPortal() {
             <p className="mt-2 text-sm">Balance: ${(Math.max(0,b.balance_due_cents)/100).toFixed(2)}</p>
             <div className="mt-4 flex flex-wrap gap-5 text-sm font-bold text-ocean">
               <a href={`/api/v1/account/bookings/${encodeURIComponent(b.public_id)}/invoice.pdf`} className="underline underline-offset-4">Download invoice PDF</a>
-              {(b.status==='ready_for_payment'||(b.status==='completed'&&b.balance_due_cents>0))&&<Link href={`/account/pay/${b.public_id}`} className="underline underline-offset-4">Pay balance</Link>}
+              {paymentsMode==='test'&&(b.status==='ready_for_payment'||(b.status==='completed'&&b.balance_due_cents>0))&&<Link href={`/account/pay/${b.public_id}`} className="underline underline-offset-4">Open test payment</Link>}
             </div>
+            {paymentsMode==='disabled'&&(b.status==='ready_for_payment'||(b.status==='completed'&&b.balance_due_cents>0))&&<p className="mt-4 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">Online payment is not enabled, so there is no payment link to use. Contact <a href="mailto:support@expresscleaningconsult.com" className="font-semibold underline">support@expresscleaningconsult.com</a> for the approved payment instructions. Your free quote request did not authorize or create a charge.</p>}
           </li>)}</ul>}
         {cursor&&<button onClick={()=>load(false,cursor).catch(e=>setError(e.message))} className="mt-5 rounded-xl border border-ocean px-5 py-3 font-bold text-ocean">Load more</button>}
       </section>

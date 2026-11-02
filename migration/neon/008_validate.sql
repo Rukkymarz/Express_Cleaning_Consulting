@@ -95,6 +95,7 @@ BEGIN
         'app.claim_launch_mail()',
         'app.consume_api_rate_limit(text,integer,integer)',
         'app.process_stripe_event(text,text,boolean,jsonb)',
+        'app.process_resend_event(text,text,text,timestamptz,text)',
         'app.account_context(text)',
         'app.staff_context(text)',
         'app.staff_list_leads(text,text,bigint,boolean,text,smallint,bigint,integer)',
@@ -187,6 +188,40 @@ BEGIN
 
     IF invalid_count > 0 THEN
         RAISE EXCEPTION '% review request attempt timelines are invalid', invalid_count;
+    END IF;
+
+    SELECT count(*)
+      INTO invalid_count
+      FROM provider_events
+     WHERE provider = 'resend'
+       AND (provider_message_id IS NULL OR event_occurred_at IS NULL
+         OR disposition IS NULL OR processed_at IS NULL);
+
+    IF invalid_count > 0 THEN
+        RAISE EXCEPTION '% Resend provider events have incomplete lifecycle metadata', invalid_count;
+    END IF;
+
+    SELECT (
+      (SELECT count(*)
+         FROM quote_request_notifications notification
+         JOIN service_requests request ON request.id = notification.service_request_id
+        WHERE request.public_id IN (
+          '01M6DFF6BMNSE451J8X70PB37Z',
+          '01M6DES1W4D246DY68W6FCHWTN'
+        )
+          AND notification.status IN ('queued','retrying'))
+      +
+      (SELECT count(*)
+         FROM launch_mail_outbox
+        WHERE message_key IN (
+          'quote-confirmation-01M6DFF6BMNSE451J8X70PB37Z',
+          'quote-confirmation-01M6DES1W4D246DY68W6FCHWTN'
+        )
+          AND status IN ('queued','retrying'))
+    ) INTO invalid_count;
+
+    IF invalid_count > 0 THEN
+        RAISE EXCEPTION '% synthetic preview emails remain claimable', invalid_count;
     END IF;
 
     SELECT count(*)

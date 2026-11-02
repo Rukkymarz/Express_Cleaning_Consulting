@@ -35,6 +35,7 @@ import {
   listStaffProspects,
   prepareStaffTestInvoice,
   prepareStaffBooking,
+  processResendEvent,
   processStripeEvent,
   recordStaffTestInvoice,
   requestAccountPlanChange,
@@ -51,6 +52,7 @@ import {
 import { canonicalJson, discountEmailBody, normalizeIntake, sha256Hex, staffIntakeBody } from './intake';
 import { processOutboxes, runScheduledMaintenance } from './outbox';
 import { buildInvoicePdf } from './pdf';
+import { parseResendEmailEvent, verifyResendWebhook } from './resend-webhook';
 import { createStripeTestInvoice, isStripeTestApiKey } from './stripe-api';
 import { parseStripeEvent, verifyStripeSignature } from './stripe';
 import type { Env } from './types';
@@ -1018,6 +1020,32 @@ app.post('/api/v1/webhooks/stripe', async (c) => {
   const result = await processStripeEvent(c.env, event);
   if (result.disposition === 'mismatch') {
     console.warn('Stripe event did not match the stored payment amount, currency, or external ID.', { eventId: event.id });
+  }
+  return c.json({ received: true });
+});
+
+app.post('/api/v1/webhooks/resend', async (c) => {
+  if (!c.env.RESEND_WEBHOOK_SECRET) return c.json({ message: 'Resend webhook is not configured.' }, 503);
+
+  const raw = await bodyText(c, 262_144);
+  const headers = {
+    id: c.req.header('svix-id') ?? '',
+    timestamp: c.req.header('svix-timestamp') ?? '',
+    signature: c.req.header('svix-signature') ?? '',
+  };
+  if (!verifyResendWebhook(raw, headers, c.env.RESEND_WEBHOOK_SECRET)) {
+    return c.json({ message: 'Invalid signature or payload.' }, 400);
+  }
+  const event = parseResendEmailEvent(raw);
+  if (!event) return c.json({ message: 'Invalid signature or payload.' }, 400);
+
+  const result = await processResendEvent(c.env, { id: headers.id, ...event });
+  if (result.disposition === 'unmatched' || result.disposition === 'ambiguous') {
+    console.warn('Resend event could not be linked to exactly one email outbox row.', {
+      eventId: headers.id,
+      emailId: event.emailId,
+      disposition: result.disposition,
+    });
   }
   return c.json({ received: true });
 });

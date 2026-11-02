@@ -11,6 +11,7 @@ type Agent={id:number;name:string;email:string};
 type Worker={id:number;name:string;email:string};
 const stages:Stage[]=['new_lead','quote_requested','quote_sent','booked','completed'];
 const labels:Record<Stage,string>={new_lead:'New lead',quote_requested:'Quote requested',quote_sent:'Quote sent',booked:'Booked',completed:'Completed'};
+function localDateTime(value:string|null){if(!value)return '';const date=new Date(value);return new Date(date.getTime()-date.getTimezoneOffset()*60000).toISOString().slice(0,16);}
 
 export default function LeadPipelineBoard() {
   const [stage,setStage]=useState<Stage>('quote_requested');
@@ -35,10 +36,13 @@ export default function LeadPipelineBoard() {
     try {await jsonRequest(`/admin/leads/${id}/assignment`,{method:'PATCH',body:JSON.stringify({agent_id})});setNotice('Agent assignment saved.');await fetchPage();}
     catch(e){setError(e instanceof Error?e.message:'Unable to assign agent');}
   }
-  async function markFollowUp(id:number) {
+  async function saveFollowUp(id:number,value:string|null) {
     setError('');setNotice('');
-    try {await jsonRequest(`/admin/leads/${id}`,{method:'PATCH',body:JSON.stringify({status:'follow_up'})});setNotice('Lead marked for follow-up.');await fetchPage();}
-    catch(e){setError(e instanceof Error?e.message:'Unable to update lead');}
+    try {
+      await jsonRequest(`/admin/leads/${id}`,{method:'PATCH',body:JSON.stringify(value?{status:'follow_up',next_follow_up_at:new Date(value).toISOString()}:{next_follow_up_at:null})});
+      setNotice(value?'Follow-up date and time saved.':'Follow-up date and time cleared.');await fetchPage();return true;
+    }
+    catch(e){setError(e instanceof Error?e.message:'Unable to update lead');return false;}
   }
   async function updateTask(taskId:string,status:TaskStatus) {
     setError('');setNotice('');
@@ -55,10 +59,17 @@ export default function LeadPipelineBoard() {
         <div className="flex justify-between gap-3"><div><h2 className="text-lg font-bold">{lead.name}</h2><p className="mt-1 break-all text-sm text-slate-600">{lead.email||'Email pending'}</p><p className="mt-1 text-sm text-slate-600">{lead.phone?<a href={`tel:${lead.phone}`} className="font-semibold text-ocean underline">{lead.phone}</a>:'Phone pending'}</p></div><span className="h-fit rounded-lg bg-[#EAF5F2] px-3 py-2 text-sm font-bold text-ocean">{lead.lead_score}/100</span></div>
         {lead.request_receipt&&<div className="mt-5 rounded-xl border border-platinum bg-canvas p-4 text-sm"><p><span className="font-semibold">Receipt:</span> <span className="break-all">{lead.request_receipt}</span></p><p className="mt-2"><span className="font-semibold">Service:</span> {lead.service_name||'Not available'}</p><p className="mt-2"><span className="font-semibold">Location:</span> {[lead.street,lead.unit,lead.city,lead.region,lead.postal_code].filter(Boolean).join(', ')}</p><p className="mt-2"><span className="font-semibold">Review task:</span> {lead.task_status?.replaceAll('_',' ')||'Not created'}</p><p className="mt-2"><span className="font-semibold">Email notice:</span> {lead.notification_status?.replaceAll('_',' ')||'Not created'}</p></div>}
         <p className="mt-4 text-sm text-slate-600">Disposition: {lead.status.replaceAll('_',' ')}{lead.next_follow_up_at?` · Follow up ${new Date(lead.next_follow_up_at).toLocaleDateString()}`:''}</p>
-        <label htmlFor={`agent-${lead.id}`} className="mt-5 block text-sm font-semibold">Assigned agent</label><select id={`agent-${lead.id}`} value={lead.assigned_agent_id??''} onChange={e=>e.target.value&&assign(lead.id,Number(e.target.value))} className="mt-2 w-full rounded-xl border border-platinum-dark p-3"><option value="">Unassigned</option>{agents.map(a=><option key={a.id} value={a.id}>{a.name}</option>)}</select>
-        <div className="mt-4 flex flex-wrap gap-3"><button onClick={()=>markFollowUp(lead.id)} className="font-bold text-ocean underline underline-offset-4">Mark lead for follow-up</button>{lead.task_id&&lead.task_status!=='completed'&&<button onClick={()=>updateTask(lead.task_id!,lead.task_status==='open'?'in_progress':'completed')} className="font-bold text-ocean underline underline-offset-4">{lead.task_status==='open'?'Start review':'Complete review'}</button>}</div>
+        {permissions.includes('leads.edit')?<><label htmlFor={`agent-${lead.id}`} className="mt-5 block text-sm font-semibold">Assigned agent</label><select id={`agent-${lead.id}`} value={lead.assigned_agent_id??''} onChange={e=>e.target.value&&assign(lead.id,Number(e.target.value))} className="mt-2 w-full rounded-xl border border-platinum-dark p-3"><option value="">Unassigned</option>{agents.map(a=><option key={a.id} value={a.id}>{a.name}</option>)}</select><LeadFollowUpEditor key={`${lead.id}-${lead.next_follow_up_at}`} lead={lead} onSave={saveFollowUp}/><div className="mt-4 flex flex-wrap gap-3">{lead.task_id&&lead.task_status!=='completed'&&<button onClick={()=>updateTask(lead.task_id!,lead.task_status==='open'?'in_progress':'completed')} className="font-bold text-ocean underline underline-offset-4">{lead.task_status==='open'?'Start review':'Complete review'}</button>}</div></>:<p className="mt-5 text-sm text-slate-600"><span className="font-semibold">Assigned agent:</span> {agents.find(agent=>agent.id===lead.assigned_agent_id)?.name||'Unassigned'}. Lead, follow-up, and review-task changes require lead-edit permission.</p>}
         {lead.service_request_id&&(permissions.includes('quotes.issue')||permissions.includes('bookings.dispatch'))&&<QuoteWorkflowPanel lead={lead} workers={workers} canIssue={permissions.includes('quotes.issue')} canDispatch={permissions.includes('bookings.dispatch')} onChanged={()=>fetchPage()} />}
       </li>)}</ul>}
     {cursor&&<button onClick={()=>fetchPage(cursor).catch(e=>setError(e.message))} className="mt-6 rounded-xl border border-ocean px-5 py-3 font-bold text-ocean">Load more</button>}
   </section>;
+}
+
+function LeadFollowUpEditor({lead,onSave}:{lead:Lead;onSave:(id:number,value:string|null)=>Promise<boolean>}){
+  const [value,setValue]=useState(localDateTime(lead.next_follow_up_at));
+  const [busy,setBusy]=useState(false);
+  async function submit(event:React.FormEvent<HTMLFormElement>){event.preventDefault();setBusy(true);try{await onSave(lead.id,value);}finally{setBusy(false);}}
+  async function clear(){if(!lead.next_follow_up_at){setValue('');return;}setBusy(true);try{if(await onSave(lead.id,null))setValue('');}finally{setBusy(false);}}
+  return <form onSubmit={submit} className="mt-4 grid gap-3 rounded-xl border border-platinum bg-canvas p-4"><label htmlFor={`follow-up-${lead.id}`} className="text-sm font-semibold">Next follow-up date and time<input id={`follow-up-${lead.id}`} type="datetime-local" required value={value} onChange={event=>setValue(event.target.value)} className="mt-2 w-full rounded-xl border border-platinum-dark bg-white p-3"/></label><p className="text-xs text-slate-500">Uses your device&apos;s time zone.</p><div className="flex flex-wrap gap-3"><button disabled={busy} className="rounded-xl border border-ocean px-4 py-2 font-bold text-ocean disabled:opacity-50">{busy?'Saving…':lead.next_follow_up_at?'Change follow-up':'Create follow-up'}</button>{(lead.next_follow_up_at||value)&&<button type="button" disabled={busy} onClick={clear} className="font-bold text-red-700 underline underline-offset-4 disabled:opacity-50">Clear follow-up</button>}</div></form>;
 }

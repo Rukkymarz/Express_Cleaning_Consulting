@@ -15,9 +15,9 @@ provider webhooks, or Railway data while the preview gates are open.
   keep `STRIPE_LIVE_PAYMENTS_ENABLED=false`.
 - Never commit `.env`, `.dev.vars`, database URLs, auth settings, Resend keys,
   Stripe keys, webhook secrets, exports, or customer data.
-- Preserve the Railway volume and `Pre-Security-Patch Backup`. A plan change and
-  temporary database start need an explicit confirmation immediately before the
-  action.
+- Preserve the Railway volume and 186 MB `Pre-Security-Patch Backup`; the volume
+  is scheduled for deletion on 2026-11-28. This workspace currently requires a
+  paid Hobby upgrade to resume the database. No paid plan is authorized.
 - The prepared `Express_Cleaning_Cloudflare_Preview_Source.zip` is unavailable.
   The owner authorized the intact Git source as the current baseline; compare the
   archive later if recovered, especially before adding any supplied imagery.
@@ -57,7 +57,7 @@ stay untracked.
 | Neon | Create an isolated free Postgres branch and enable branch-scoped Managed Auth. Create `ecc_edge_runtime` as a generated-password LOGIN role through the secure UI. | Do not import into or modify an unrelated project. Add only exact preview/live website origins as trusted auth origins; disable unmanaged public signup at the provider. |
 | Resend | Verify the business sender/domain and create a restricted server-side key. | Public sender/support is `support@expresscleaningconsult.com`; internal quote recipient is `expressconsulting92@gmail.com`. Never put the key in `NEXT_PUBLIC_*`. |
 | Stripe | Use a sandbox/test account, restricted test key where possible, and a test webhook. | Never issue a live invoice. The amount must come from an accepted stored quote; status changes only from a verified webhook. |
-| Railway | Retain offline services, volume, and backup as the source/rollback boundary. | Do not delete, redeploy, reset, or overwrite. Activate its free plan only after a specific confirmation for the export action. |
+| Railway | Retain offline services, volume, and backup as the source/rollback boundary. | Do not delete, redeploy, reset, overwrite, or purchase a plan. The current workspace UI requires paid Hobby to resume; recover only through a separately authorized no-cost path unless the budget decision changes. |
 
 ## Current preview evidence
 
@@ -74,15 +74,17 @@ The API `/up` check reports both service and database `ok`, the catalog route
 returns the seeded services, and the deployed web root returns HTTP 200. The
 mobile quote page was visually checked at 390 by 844 pixels; the state selector
 shows all 50 states plus District of Columbia and submits the two-letter code.
-One additional synthetic browser request is prepared but has not been
-submitted, so it has no receipt and is not verification evidence.
+No additional synthetic browser request was submitted in the current work
+session, so there is no new receipt or new end-to-end delivery evidence.
 
 The API Worker currently has only `DATABASE_URL` and `RATE_LIMIT_SALT` secrets.
-`RESEND_API_KEY`, Stripe test credentials/webhook secret, and branch-scoped Neon
-Managed Auth are not configured. Do not expect a queued notification to be
-delivered, an authenticated workflow to work, or any Stripe object to be
-created until those separate gates are completed. Live Stripe remains disabled.
-No Railway customer rows or private uploads have been imported.
+`RESEND_API_KEY`, `RESEND_WEBHOOK_SECRET`, Stripe test credentials/webhook secret,
+and branch-scoped Neon Managed Auth are not configured. Do not expect a queued
+notification to be delivered, an authenticated workflow to work, or any Stripe
+object to be created until those separate gates are completed. Live Stripe
+remains disabled. Migration 011 is source complete but unapplied/undeployed; it
+must quarantine the four known synthetic outbox rows before any Resend key is
+configured. No Railway customer rows or private uploads have been imported.
 
 ## Configuration
 
@@ -106,6 +108,7 @@ Cloudflare secrets:
 DATABASE_URL
 RATE_LIMIT_SALT
 RESEND_API_KEY
+RESEND_WEBHOOK_SECRET
 STRIPE_API_KEY
 STRIPE_WEBHOOK_SECRET
 ```
@@ -118,9 +121,10 @@ events gated separately.
 
 ## Database migration order
 
-1. With specific approval, temporarily start preserved Railway MySQL and make an
-   encrypted logical export plus source row counts. Inventory private uploads
-   separately. Do not alter source rows.
+1. Recover the preserved Railway MySQL only through a no-cost read/export path or
+   after a separate budget decision. Its current workspace UI requires paid
+   Hobby to resume. Make an encrypted logical export plus source row counts,
+   inventory private uploads separately, and do not alter source rows.
 2. Apply `migration/neon/001_schema.sql` to an empty isolated branch.
 3. Import **data rows only** with explicit MySQL-to-Postgres type/column mapping.
    Never substitute the source ZIP for customer records.
@@ -128,12 +132,13 @@ events gated separately.
 5. Create the secure `ecc_edge_runtime` login, apply
    `006_runtime_security.sql`, then store only its pooled URL as the Worker
    `DATABASE_URL` secret.
-6. Apply `007_reset_sequences.sql`, `009_fix_idempotent_replay.sql`, and
-   `010_quote_portal_workflow.sql`, then run `008_validate.sql`. Migration 010
-   has executed successfully on the isolated preview, adding the expanded staff
-   lead workflow, exact-email verified-identity customer linking, and
-   ownership-scoped account quote listing. This does not replace the required
-   post-import reconciliation.
+6. Apply `007_reset_sequences.sql`, `009_fix_idempotent_replay.sql`,
+   `010_quote_portal_workflow.sql`, and `011_resend_delivery_events.sql`, then run
+   `008_validate.sql`. Migration 010 has executed successfully on the isolated
+   preview; migration 011 is source complete but has not yet executed. Migration
+   011 records provider delivery events and reversibly quarantines the two known
+   synthetic staff notices plus two synthetic customer confirmations. Verify all
+   four are non-claimable before setting `RESEND_API_KEY`.
 7. Reconcile every table count, receipt, relationship, permission link, and
    recoverable upload inventory against the captured source counts.
 

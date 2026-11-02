@@ -26,9 +26,9 @@ access, preview quote flow, and rollback plan have all been verified.
 6. In Neon's secure role UI, create a generated-password LOGIN role named
    `ecc_edge_runtime`. Apply `006_runtime_security.sql`. Put that role's pooled
    connection URL only in the Cloudflare `DATABASE_URL` secret.
-7. Apply `007_reset_sequences.sql`, `009_fix_idempotent_replay.sql`, and
-   `010_quote_portal_workflow.sql`, then run `008_validate.sql` and compare its
-   counts with the recorded MySQL counts.
+7. Apply `007_reset_sequences.sql`, `009_fix_idempotent_replay.sql`,
+   `010_quote_portal_workflow.sql`, and `011_resend_delivery_events.sql`, then
+   run `008_validate.sql` and compare its counts with the recorded MySQL counts.
 8. Run preview-only quote, replay, staff authorization, email, and Stripe test
    webhook tests before any DNS change.
 
@@ -57,15 +57,23 @@ imported database permission mapping.
 ## Secrets and email
 
 The Cloudflare Worker receives server-only secrets for the pooled Neon URL,
-Resend key, rate-limit salt, and Stripe webhook secret. None belongs in a
-`NEXT_PUBLIC_*` variable, source archive, commit, build log, or browser bundle.
+Resend send key and webhook signing secret, rate-limit salt, and Stripe webhook
+secret. None belongs in a `NEXT_PUBLIC_*` variable, source archive, commit,
+build log, or browser bundle.
 
 Resend must verify the sender domain before email is enabled. The public support
 address is `support@expresscleaningconsult.com`; internal new-quote notifications
 go only to `expressconsulting92@gmail.com`. Provider idempotency keys and
 database claim tokens prevent automatic retries from sending duplicates. A
 result that remains ambiguous beyond the 23-hour safety window is held for
-manual reconciliation.
+manual reconciliation. `011_resend_delivery_events.sql` separately records the
+provider's accepted, delayed, delivered, bounced, failed, suppressed, or
+complained state. Signed webhook retries deduplicate on Resend's `svix-id`.
+The same migration preserves but quarantines the four unsent messages attached
+to the two documented synthetic preview receipts. They are not claimable after
+the provider key is added and may be released only by explicitly reviewing a
+recipient, changing that specific row back to `queued`, and clearing the
+`prelaunch_synthetic_quarantine` reason.
 
 ## Stripe safety
 

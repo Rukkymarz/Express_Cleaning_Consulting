@@ -900,6 +900,26 @@ export async function markReviewRequestFailed(
   await sql`select app.mark_review_request_failed(${id}, ${token}, ${reason})`;
 }
 
+export interface ResendEventResult {
+  disposition: 'processed' | 'duplicate' | 'unmatched' | 'ambiguous' | 'ignored';
+  outbox_kind: string | null;
+  outbox_id: number | string | null;
+  delivery_status: string | null;
+}
+
+export async function processResendEvent(
+  env: Env,
+  event: { id: string; type: string; emailId: string; createdAt: string; detail: string | null },
+): Promise<ResendEventResult> {
+  const sql = sqlFor(env);
+  const rows = await sql`select * from app.process_resend_event(
+    ${event.id}, ${event.type}, ${event.emailId}, ${event.createdAt}, ${event.detail}
+  )`;
+  const result = (rows as unknown as ResendEventResult[])[0];
+  if (!result) throw new Error('Resend workflow returned no result.');
+  return result;
+}
+
 export interface StripeEventResult {
   disposition: 'processed' | 'duplicate' | 'unmatched' | 'mismatch' | 'ignored';
   payment_id: number | string | null;

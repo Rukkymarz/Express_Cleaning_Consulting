@@ -46,9 +46,15 @@ source remains the rollback reference.
 - `POST /api/v1/webhooks/stripe` verifies the raw Stripe signature and delegates
   duplicate-safe payment state changes to Postgres. Payments are disabled by
   default and quote submission never calls Stripe.
-- A one-minute cron drains quote/customer Resend outboxes, sends consent-gated
-  post-service review requests only when an approved HTTPS destination is
-  configured, and prunes expired hashed rate-limit buckets.
+- `POST /api/v1/webhooks/resend` verifies the raw Svix signature, deduplicates
+  provider retries, and records accepted, delayed, delivered, bounced, failed,
+  suppressed, or complained delivery state separately from the send outbox.
+- An hourly recovery cron drains quote/customer Resend outboxes, sends
+  consent-gated post-service review requests only when an approved HTTPS
+  destination is configured, and prunes expired hashed rate-limit buckets.
+  New submissions also start an immediate best-effort drain. Durable outbox
+  retries can therefore wait up to about one hour after a transient failure;
+  the recovery cadence lets Neon scale down between runs on its free tier.
 
 This is not yet the complete replacement for Laravel operations. Generic
 campaign delivery, private media, provider-configured auth/account validation,
@@ -75,6 +81,7 @@ Configure these with Cloudflare's secret flow; never commit their values:
 - `DATABASE_URL`: pooled Neon URL for the least-privilege `ecc_edge_runtime` role
 - `RATE_LIMIT_SALT`: at least 32 random characters
 - `RESEND_API_KEY`: restricted to the verified sender/domain where supported
+- `RESEND_WEBHOOK_SECRET`: signing secret for the single Resend webhook endpoint
 - `STRIPE_API_KEY`: a restricted `rk_test_...` key for preview testing; use a
   secret test key only if the required restricted-key permissions are not
   available
@@ -101,6 +108,14 @@ The non-secret variables in `wrangler.jsonc` keep the public support sender,
 internal quote recipient, allowed browser origins, staff review URL, and Stripe
 mode explicit. A preview deployment must add its exact origin to
 `CORS_ALLOWED_ORIGINS` before browser QA.
+
+Migration `011_resend_delivery_events.sql` also quarantines the two known
+preview receipts and their two optional customer confirmations without deleting
+them. The rows remain available for audit and replay checks, but the outbox
+claimer cannot send them when Resend is enabled. Releasing one requires a
+deliberate database review followed by changing only that row from
+`quarantined` back to `queued` and clearing
+`prelaunch_synthetic_quarantine`; launch setup does not release them.
 
 ## Cutover gates
 
