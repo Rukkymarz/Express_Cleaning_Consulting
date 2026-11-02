@@ -1,6 +1,6 @@
 # Free-hosting migration feature parity
 
-Updated 2026-11-01 (America/Chicago).
+Updated 2026-11-02 (America/Chicago).
 
 This is the cutover checklist for replacing the expired Railway deployment.
 "Source complete" means code exists locally; it does **not** mean the database
@@ -12,11 +12,11 @@ No row in this document authorizes a DNS change.
 | Public marketing pages, responsive layout, privacy, terms, sitemap, robots, metadata | The intact Git source is configured non-destructively for Cloudflare vinext. The official checker reports 100% compatibility; normal Next.js and Cloudflare builds pass; local workerd returned 200 for 14 public routes and private shells. The prepared archive remains unavailable for comparison. | Deploy only to an isolated preview, compare desktop/mobile and all routes, and recover any owner-supplied archive assets if they later become available. |
 | Bundled project gallery | Five approved before/after pairs and eleven WebP derivatives are present with source notes. | Rebuild and visually verify every image in preview. Do not add unverified jobs or reviews. |
 | Service-card photography | Four absent-file references were removed from active CSS, so the Cloudflare build no longer ships known broken image requests. No replacement photo was invented. | Recover only owner-supplied or explicitly licensed assets later; keep neutral styling until provenance and website-use rights are verified. |
-| One-step free quote | Source complete in the Worker/Postgres migration: required name, phone, service, a full-name 50-state-plus-DC selector that submits a validated two-letter code, and ZIP; optional email/notes; server-derived receipt; no Stripe call. | Apply migrations to an isolated database and verify save, receipt, state code, error state, and same-key replay in a browser. |
-| Lead, service request, linked review task | Transactional `app.create_callback_request` source complete, including deterministic lead sync and one task per request. | Verify imported and synthetic relationships in Postgres and staff UI. |
+| One-step free quote | Deployed preview and Neon schema are working. Direct synthetic receipt `01M6DES1W4D246DY68W6FCHWTN` saved successfully; a retry regression was fixed and the same key now returns the same receipt. The browser form shows all 50 states plus DC and is filled for a final success-message test. | Confirm the final browser submission, success message, and persisted state code. Do not treat the preview synthetic row as migrated production data. |
+| Lead, service request, linked review task | Direct Neon verification found exactly one request, one open `quote_review` task, one notification row, and one idempotency event for the synthetic receipt. | Provision staff auth and confirm the same fields in the staff UI; reconcile imported production relationships when a source export exists. |
 | Quote notification and optional customer confirmation | Durable claim-token outboxes and Resend sender source complete. Internal recipient is `expressconsulting92@gmail.com`; public sender/support address is `support@expresscleaningconsult.com`. | Verify sender domain, configure a restricted key server-side, prove one delivery for a new request and zero duplicate delivery on replay. |
 | Discount, partner-cleaner, referral, and vendor intakes | Public intake endpoint, transactional persistence, and mail outbox source complete. | Preview browser tests for each form, consent behavior, inbox visibility, and replay. |
-| Rate limiting and CORS | Database-backed hashed IP buckets and exact origin allowlist source complete. | Load-test preview boundaries and add the exact preview origin before QA. |
+| Rate limiting and CORS | Cloudflare preview origin is explicitly allowlisted; health, catalog, quote, status, and preflight checks pass against the least-privilege Neon role. | Run bounded rate-limit tests and replace the preview staff-review URL with the canonical domain during cutover. |
 | Authentication | Source complete for branch-scoped Neon Managed Auth: the frontend no longer initializes Sanctum, login/logout use Better Auth-compatible endpoints, the proxy rewrites first-party cookies/redirects, mutations require an exact configured browser origin, `/session` derives staff/customer routing from the imported permission mapping, and public signup is blocked. Auth proxy tests pass. | Provision preview auth, disable unmanaged signup at the provider too, invite/reset owner and Christine through a controlled flow, link their opaque IDs, and test login/logout/session expiry and anonymous/customer/staff denials. |
 | Staff lead/task workflow | Agents, paginated leads, status/follow-up updates, assignment, and task transitions are source complete as hardened database functions and Worker routes. | Run permission tests for owner, Christine, limited staff, and anonymous users; verify audit rows and the linked quote receipt/contact/service/location fields. |
 | Prospect board | Commercial/residential filters, due queues, assignment, create/update/convert, lead sync, and audit source are complete. | Execute database and browser tests with imported roles and records. |
@@ -34,13 +34,14 @@ No row in this document authorizes a DNS change.
 | Twilio voice/SMS | Intentionally not ported to the replacement runtime, matching the current requirement to keep Twilio removed. Legacy source remains only as rollback/reference code. | Confirm the preview bundle has no Twilio secrets, SDK, public routes, callbacks, or UI dependency. |
 | Private media/uploads | Legacy metadata table exists; Railway private files have not been exported and replacement storage is not configured. | Inventory/export recoverable uploads without deleting Railway, select private storage, and verify access controls/signed URLs. |
 | GA4/Meta hooks | Frontend hooks remain in source and quote tracking fires only after persistence. No real IDs are present. | Preserve consent gating in the Cloudflare build; configure only owner-supplied IDs and verify with provider tools. |
-| Customer data migration | Postgres schema, sequence reset, runtime grants, and validation queries are drafted. No Railway customer data has been exported or imported. | With explicit approval, temporarily activate Railway's free plan, make an encrypted logical export, record source counts, import rows only, reset sequences, and reconcile counts/relationships. Preserve the Railway volume and backup. |
-| Preview deployment and custom domain | Not deployed. The custom domain still points at the unavailable Railway service. | Provision only free-tier preview resources, pass this checklist, show the preview to the owner, preserve email DNS, then perform a controlled DNS cutover with rollback ready. |
+| Customer data migration | The Neon schema, reference seed, runtime grants, sequence reset, and structural validation passed on the empty preview database. No Railway customer data has been exported or imported. | Recover an authoritative source export without deleting the Railway volume, record source counts, import rows only, and reconcile counts/relationships. Never present the empty preview as production migration completion. |
+| Preview deployment and custom domain | Web and API Workers are live on isolated `workers.dev` URLs; Neon health is green. A pending Cloudflare Free zone now preserves six verified non-Railway DNS records. GoDaddy remains authoritative and the old Railway `www` record is absent. | Finish preview gates, configure inbound support mail, then follow `DNS_CUTOVER.md`. Do not change nameservers or attach the custom domain yet. |
 
 ## Current no-cutover verdict
 
-The source is ready for an **isolated provider preview**, but the migration is
-not ready for DNS cutover. Provider accounts, migrated production data, linked
-staff identities, Resend delivery, database execution, and several operational
-flows remain unverified. The missing prepared archive can still be compared if
-it is recovered; it is not being replaced with invented content.
+The isolated Cloudflare and Neon preview is operational, but the migration is
+not ready for DNS cutover. Browser success confirmation, inbound support mail,
+Resend delivery, linked staff identities, production-data recovery, Stripe test
+mode, and several private workflows remain unverified. The missing prepared
+archive can still be compared if it is recovered; it is not being replaced with
+invented content.
