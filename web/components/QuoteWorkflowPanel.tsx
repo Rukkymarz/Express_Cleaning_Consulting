@@ -61,7 +61,7 @@ function money(value: number | null | undefined, currency = 'USD'): string {
   return new Intl.NumberFormat(undefined, { style: 'currency', currency }).format((value ?? 0) / 100);
 }
 
-export default function QuoteWorkflowPanel({ lead, workers, canIssue, canDispatch, onChanged }: { lead: LeadWorkflow; workers: Worker[]; canIssue: boolean; canDispatch: boolean; onChanged: () => Promise<void> }) {
+export default function QuoteWorkflowPanel({ lead, workers, canIssue, canDispatch, canPay, onChanged }: { lead: LeadWorkflow; workers: Worker[]; canIssue: boolean; canDispatch: boolean; canPay: boolean; onChanged: () => Promise<void> }) {
   const [email, setEmail] = useState(lead.customer_email || lead.email || '');
   const [items, setItems] = useState<EditableItem[]>([{ description: lead.service_name || '', quantity: '1', unitDollars: '' }]);
   const [taxDollars, setTaxDollars] = useState('');
@@ -246,7 +246,7 @@ export default function QuoteWorkflowPanel({ lead, workers, canIssue, canDispatc
       <section aria-labelledby={`invoice-title-${lead.id}`} className="border-t border-platinum pt-5">
         <h3 id={`invoice-title-${lead.id}`} className="font-bold">4. Optional Stripe test invoice</h3>
         <p className="mt-2 text-sm text-slate-600">The free quote form never charges the customer. This step is only for a separately approved quote and remains test-only.</p>
-        {!canIssue ? <p className="mt-3 text-sm text-slate-600">A staff member with quote permission must create any approved test invoice.</p>
+        {!canPay ? <p className="mt-3 text-sm text-slate-600">A staff member with payment-issuance permission must create any approved test invoice.</p>
           : paymentsMode !== 'test' ? <p className="mt-3 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">Stripe invoicing is disabled. No payment option can be created.</p>
           : !activeBookingId ? <p className="mt-3 text-sm text-slate-600">Prepare a booking before creating a test invoice.</p>
           : <form onSubmit={issueTestInvoice} className="mt-4 grid gap-3">

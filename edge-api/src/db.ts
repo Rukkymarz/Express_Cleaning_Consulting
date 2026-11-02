@@ -115,6 +115,27 @@ export interface StaffLead {
   booking_status: string | null;
 }
 
+export interface StaffLeadExport {
+  receipt: string | null;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  lead_status: string;
+  pipeline_stage: string;
+  lead_score: number | string;
+  assigned_agent: string | null;
+  next_follow_up_at: string | null;
+  service_name: string | null;
+  street: string | null;
+  unit: string | null;
+  city: string | null;
+  region: string | null;
+  postal_code: string | null;
+  task_status: string | null;
+  notification_status: string | null;
+  created_at: string | null;
+}
+
 export interface LinkedCustomer {
   customer_id: number | string;
   customer_email: string;
@@ -340,6 +361,12 @@ export async function listStaffLeads(
     ${filters.search}, ${filters.cursorScore}, ${filters.cursorId}, ${filters.limit}
   )`;
   return rows as unknown as StaffLead[];
+}
+
+export async function exportStaffLeads(env: Env, authUserId: string): Promise<StaffLeadExport[]> {
+  const sql = sqlFor(env);
+  const rows = await sql`select * from app.staff_export_leads(${authUserId})`;
+  return rows as unknown as StaffLeadExport[];
 }
 
 export async function updateStaffLead(

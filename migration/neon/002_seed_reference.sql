@@ -9,7 +9,9 @@ FROM (
     VALUES
         ('leads.view'),
         ('leads.edit'),
+        ('leads.export'),
         ('quotes.issue'),
+        ('payments.issue'),
         ('bookings.dispatch'),
         ('calls.place'),
         ('campaigns.manage'),
@@ -22,6 +24,7 @@ SELECT role_name, 'web', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
 FROM (
     VALUES
         ('owner'),
+        ('lead_manager'),
         ('sales_agent'),
         ('dispatcher'),
         ('marketing_agent'),
@@ -36,11 +39,17 @@ FROM (
     VALUES
         ('owner', 'leads.view'),
         ('owner', 'leads.edit'),
+        ('owner', 'leads.export'),
         ('owner', 'quotes.issue'),
+        ('owner', 'payments.issue'),
         ('owner', 'bookings.dispatch'),
         ('owner', 'calls.place'),
         ('owner', 'campaigns.manage'),
         ('owner', 'workers.approve'),
+        ('lead_manager', 'leads.view'),
+        ('lead_manager', 'leads.edit'),
+        ('lead_manager', 'leads.export'),
+        ('lead_manager', 'calls.place'),
         ('sales_agent', 'leads.view'),
         ('sales_agent', 'leads.edit'),
         ('sales_agent', 'quotes.issue'),

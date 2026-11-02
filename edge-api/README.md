@@ -117,6 +117,11 @@ deliberate database review followed by changing only that row from
 `quarantined` back to `queued` and clearing
 `prelaunch_synthetic_quarantine`; launch setup does not release them.
 
+Migration `012_lead_manager_and_exports.sql` adds an exact non-billing
+`lead_manager` role, a formula-safe audited lead CSV export, and the distinct
+`payments.issue` permission. Hosted test-invoice mutations require
+`payments.issue`; `leads.edit` or `quotes.issue` alone is insufficient.
+
 ## Cutover gates
 
 Do not attach the live domain merely because this Worker bundles. Required gates

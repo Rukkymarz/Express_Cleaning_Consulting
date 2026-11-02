@@ -13,6 +13,7 @@ import {
   consumeRateLimit,
   createCallbackRequest,
   createPublicIntake,
+  exportStaffLeads,
   getCatalog,
   getAccountContext,
   getAccountBooking,
@@ -50,6 +51,7 @@ import {
   type StaffProspect,
 } from './db';
 import { canonicalJson, discountEmailBody, normalizeIntake, sha256Hex, staffIntakeBody } from './intake';
+import { renderCsv } from './csv';
 import { processOutboxes, runScheduledMaintenance } from './outbox';
 import { buildInvoicePdf } from './pdf';
 import { parseResendEmailEvent, verifyResendWebhook } from './resend-webhook';
@@ -477,6 +479,36 @@ app.get('/api/v1/admin/leads', async (c) => {
       quote_deposit_cents: lead.quote_deposit_cents === null ? null : Number(lead.quote_deposit_cents),
     }));
     return c.json({ data: normalized, next_cursor: hasMore && page.length ? cursorFor(page[page.length - 1] as StaffLead) : null });
+  } catch (error) { staffDatabaseError(error); }
+});
+
+app.get('/api/v1/admin/leads.csv', async (c) => {
+  const { authUserId } = await staffIdentity(c);
+  try {
+    const rows = await exportStaffLeads(c.env, authUserId);
+    const csv = renderCsv(
+      [
+        'Receipt', 'Name', 'Email', 'Phone', 'Lead status', 'Pipeline stage',
+        'Lead score', 'Assigned agent', 'Next follow-up', 'Service', 'Street',
+        'Unit', 'City', 'State', 'ZIP', 'Task status', 'Notification status', 'Created',
+      ],
+      rows.map((row) => [
+        row.receipt, row.name, row.email, row.phone, row.lead_status,
+        row.pipeline_stage, row.lead_score, row.assigned_agent,
+        row.next_follow_up_at, row.service_name, row.street, row.unit, row.city,
+        row.region, row.postal_code, row.task_status, row.notification_status,
+        row.created_at,
+      ]),
+    );
+    const date = new Date().toISOString().slice(0, 10);
+    return new Response(csv, {
+      headers: {
+        'Content-Type': 'text/csv; charset=utf-8',
+        'Content-Disposition': `attachment; filename="express-cleaning-leads-${date}.csv"`,
+        'Cache-Control': 'private, no-store',
+        'X-Content-Type-Options': 'nosniff',
+      },
+    });
   } catch (error) { staffDatabaseError(error); }
 });
 

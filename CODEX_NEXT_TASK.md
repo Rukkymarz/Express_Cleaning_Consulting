@@ -1,23 +1,20 @@
 # Next task
 
-The Railway deployment is offline. Read [STATE.md](STATE.md) and
-[migration/FEATURE_PARITY.md](migration/FEATURE_PARITY.md) before making changes.
+Read [STATE.md](STATE.md) first. Continue from the existing Cloudflare/Neon
+preview and latest migration branch; do not recreate resources or repeat passed
+checks without cause.
 
-1. Use Node 24.22+ and provision isolated free Cloudflare/Neon preview resources.
-   Configure exact preview origins and server-only secrets; do not attach the
-   custom domain. Apply and execute the migrations—source code and dry-run builds
-   are not evidence that database/provider flows run.
-2. With explicit approval immediately before activation, start Railway's free
-   plan long enough to make a read-only logical MySQL/private-upload export.
-   Preserve the volume and backup, then reconcile imported table counts.
-3. Create controlled owner/Christine provider identities, link imported database
-   users, and execute customer/staff permission tests. Provider public signup
-   must also be disabled.
-4. Run quote/task/email/replay, staff authorization, Stripe sandbox webhook,
-   desktop/mobile, image, SEO, and anonymous-access tests before any DNS change.
-5. Close or explicitly retire generic campaign and private-media gaps. If the
-   prepared archive is recovered, compare it for approved assets/refinements;
-   do not replace missing content with invented photos or reviews.
+1. With signed-in provider access and action-time confirmation, apply migrations
+   011 and 012, run 008 validation, verify synthetic-mail quarantine, and deploy
+   the updated API/UI.
+2. Configure Resend and an isolated Stripe sandbox through write-only Cloudflare
+   secrets. Execute the quote/task/email/replay and hosted-invoice webhook matrix.
+3. Enable branch-scoped Managed Auth only after the exact owner and Christine
+   login emails are supplied. Assign Christine only the `lead_manager` role.
+4. Send the prepared Railway no-cost export/grace request after owner review;
+   preserve the volume and backup and do not purchase Hobby.
+5. Change DNS only after every critical acceptance gate in
+   [migration/DNS_CUTOVER.md](migration/DNS_CUTOVER.md) passes.
 
-Keep live Stripe disabled, keep Twilio removed, and do not claim the indexed
-website copy is live while fresh browser checks return Railway's 404 fallback.
+Keep live Stripe disabled, keep Twilio removed, and never claim delivery,
+provider setup, production-data recovery, or domain launch without direct evidence.

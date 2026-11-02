@@ -5,6 +5,15 @@ Updated 2026-11-02 (America/Chicago).
 The public domain still delegates to GoDaddy. The Cloudflare zone is pending,
 so none of the records below affect public traffic yet.
 
+Read-only public DNS verification on 2026-11-02 confirmed:
+
+- apex A records still point to GoDaddy parking at `15.197.225.128` and
+  `3.33.251.168`;
+- `www` has no public answer;
+- no public MX or DS record exists;
+- the DMARC TXT, Resend DKIM TXT, and `send`/`rsend` CNAMEs resolve; and
+- GoDaddy nameservers remain authoritative.
+
 ## Current delegation
 
 - Current authoritative nameservers: `ns23.domaincontrol.com`,
@@ -72,3 +81,33 @@ server-side Resend API key is still required in the API Worker, and delivery to
    canonical redirects. Keep Stripe live mode disabled.
 7. If activation or routing fails, restore the two GoDaddy nameservers and
    verify delegation before making any further changes.
+
+## Acceptance checks before declaring launch
+
+- `https://expresscleaningconsult.com` redirects permanently to
+  `https://www.expresscleaningconsult.com/` without a redirect loop.
+- `https://www.expresscleaningconsult.com` serves the web Worker with a valid
+  publicly trusted TLS certificate; HTTP redirects to HTTPS.
+- `/book`, privacy, terms, sitemap, robots, static assets, and client navigation
+  work on both apex and `www` entry paths.
+- A quote from the canonical origin passes CORS, returns one receipt, persists
+  one request and review task, and creates one new notification only.
+- The new notification is accepted and delivered by Resend; replaying its exact
+  idempotency key produces no second task or email.
+- `support@expresscleaningconsult.com` receives a real inbound test through the
+  approved forwarding destination, while SPF/DKIM/DMARC remain valid.
+- Anonymous users cannot read staff or customer data, and the owner/lead-manager
+  account boundaries pass.
+- Stripe remains test-only/disabled on the public quote path. No live key or
+  live hosted invoice is present in the Worker.
+
+## Rollback evidence to capture
+
+Immediately before changing nameservers, capture the GoDaddy record list,
+current nameservers, Cloudflare zone records, Worker versions, and the UTC
+timestamp. If a critical acceptance check fails, restore
+`ns23.domaincontrol.com` and `ns24.domaincontrol.com`, wait for public NS
+delegation to return, verify the parked apex state and preserved mail records,
+and keep the `workers.dev` preview available for diagnosis. Do not delete the
+Cloudflare zone, Workers, Neon branch, Railway backup, or Railway volume during
+rollback.

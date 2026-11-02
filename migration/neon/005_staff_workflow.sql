@@ -1686,7 +1686,7 @@ declare
   v_settled bigint;
   v_amount bigint;
 begin
-  v_actor_id := app.require_permission(p_auth_user_id, 'quotes.issue');
+  v_actor_id := app.require_permission(p_auth_user_id, 'payments.issue');
   if p_booking_public_id is null or p_booking_public_id !~ '^[0-9A-HJKMNP-TV-Z]{26}$'
      or p_mode is null or p_mode not in ('deposit','full','balance')
      or p_days_until_due is null or p_days_until_due < 1 or p_days_until_due > 90
@@ -1802,7 +1802,7 @@ declare
   v_payment payments%rowtype;
   v_first_record boolean;
 begin
-  v_actor_id := app.require_permission(p_auth_user_id, 'quotes.issue');
+  v_actor_id := app.require_permission(p_auth_user_id, 'payments.issue');
   if p_customer_id !~ '^cus_' or p_invoice_id !~ '^in_'
      or p_hosted_invoice_url is null or p_hosted_invoice_url !~ '^https://'
      or (p_invoice_pdf_url is not null and p_invoice_pdf_url !~ '^https://') then
@@ -1845,7 +1845,7 @@ as $$
 declare
   v_actor_id bigint;
 begin
-  v_actor_id := app.require_permission(p_auth_user_id, 'quotes.issue');
+  v_actor_id := app.require_permission(p_auth_user_id, 'payments.issue');
   update payments set status = 'needs_reconciliation',
     failure_code = 'stripe_invoice_result_unknown',
     failure_message = 'Stripe did not return a confirmed invoice result. Reconcile before retrying.',

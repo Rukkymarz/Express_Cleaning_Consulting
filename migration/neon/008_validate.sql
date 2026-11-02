@@ -99,6 +99,7 @@ BEGIN
         'app.account_context(text)',
         'app.staff_context(text)',
         'app.staff_list_leads(text,text,bigint,boolean,text,smallint,bigint,integer)',
+        'app.staff_export_leads(text)',
         'app.staff_link_customer(text,bigint,text)',
         'app.staff_update_task(text,text,text)',
         'app.staff_list_prospects(text,text,text,timestamptz,text,text,integer,bigint,integer)',
@@ -222,6 +223,48 @@ BEGIN
 
     IF invalid_count > 0 THEN
         RAISE EXCEPTION '% synthetic preview emails remain claimable', invalid_count;
+    END IF;
+
+    SELECT count(*)
+      INTO invalid_count
+      FROM (
+        SELECT permission.name
+          FROM roles role
+          JOIN role_has_permissions role_permission ON role_permission.role_id = role.id
+          JOIN permissions permission ON permission.id = role_permission.permission_id
+         WHERE role.name = 'lead_manager' AND role.guard_name = 'web'
+           AND permission.name NOT IN ('leads.view','leads.edit','leads.export','calls.place')
+        UNION ALL
+        SELECT required.name
+          FROM (VALUES ('leads.view'),('leads.edit'),('leads.export'),('calls.place')) required(name)
+         WHERE NOT EXISTS (
+           SELECT 1
+             FROM roles role
+             JOIN role_has_permissions role_permission ON role_permission.role_id = role.id
+             JOIN permissions permission ON permission.id = role_permission.permission_id
+            WHERE role.name = 'lead_manager' AND role.guard_name = 'web'
+              AND permission.name = required.name
+         )
+      ) invalid_lead_manager_permission;
+
+    IF invalid_count > 0 THEN
+        RAISE EXCEPTION 'lead_manager permission boundary has % invalid or missing grants', invalid_count;
+    END IF;
+
+    SELECT count(*)
+      INTO invalid_count
+      FROM pg_proc procedure
+      JOIN pg_namespace namespace ON namespace.oid = procedure.pronamespace
+     WHERE namespace.nspname = 'app'
+       AND procedure.proname IN (
+         'staff_prepare_test_invoice',
+         'staff_record_test_invoice',
+         'staff_hold_test_invoice_for_reconciliation'
+       )
+       AND position('''payments.issue''' in pg_get_functiondef(procedure.oid)) = 0;
+
+    IF invalid_count > 0 THEN
+        RAISE EXCEPTION '% Stripe invoice functions lack payments.issue authorization', invalid_count;
     END IF;
 
     SELECT count(*)

@@ -133,12 +133,15 @@ events gated separately.
    `006_runtime_security.sql`, then store only its pooled URL as the Worker
    `DATABASE_URL` secret.
 6. Apply `007_reset_sequences.sql`, `009_fix_idempotent_replay.sql`,
-   `010_quote_portal_workflow.sql`, and `011_resend_delivery_events.sql`, then run
-   `008_validate.sql`. Migration 010 has executed successfully on the isolated
-   preview; migration 011 is source complete but has not yet executed. Migration
+   `010_quote_portal_workflow.sql`, `011_resend_delivery_events.sql`, and
+   `012_lead_manager_and_exports.sql`, then run `008_validate.sql`. Migration 010
+   has executed successfully on the isolated preview; migrations 011/012 are
+   source complete but have not yet executed. Migration
    011 records provider delivery events and reversibly quarantines the two known
    synthetic staff notices plus two synthetic customer confirmations. Verify all
-   four are non-claimable before setting `RESEND_API_KEY`.
+   four are non-claimable before setting `RESEND_API_KEY`. Migration 012 adds the
+   exact `lead_manager` permission boundary, audited CSV export, and distinct
+   `payments.issue` authorization.
 7. Reconcile every table count, receipt, relationship, permission link, and
    recoverable upload inventory against the captured source counts.
 

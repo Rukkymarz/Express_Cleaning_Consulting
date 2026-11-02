@@ -27,8 +27,9 @@ access, preview quote flow, and rollback plan have all been verified.
    `ecc_edge_runtime`. Apply `006_runtime_security.sql`. Put that role's pooled
    connection URL only in the Cloudflare `DATABASE_URL` secret.
 7. Apply `007_reset_sequences.sql`, `009_fix_idempotent_replay.sql`,
-   `010_quote_portal_workflow.sql`, and `011_resend_delivery_events.sql`, then
-   run `008_validate.sql` and compare its counts with the recorded MySQL counts.
+   `010_quote_portal_workflow.sql`, `011_resend_delivery_events.sql`, and
+   `012_lead_manager_and_exports.sql`, then run `008_validate.sql` and compare
+   its counts with the recorded MySQL counts.
 8. Run preview-only quote, replay, staff authorization, email, and Stripe test
    webhook tests before any DNS change.
 

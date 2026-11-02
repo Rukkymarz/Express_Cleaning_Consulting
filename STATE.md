@@ -49,9 +49,10 @@ production data has been copied to either provider.
   `d7af9938-1f03-4929-b73c-cf80b6f19dc1` and web
   `a5e6df95-637f-479e-ae3e-8d32bcd37378`.
 - Neon migrations through `010_quote_portal_workflow.sql` executed successfully
-  on the preview branch. Migration `011_resend_delivery_events.sql` is source
-  complete but has **not** been applied. It must run before the related Worker
-  source is deployed or any Resend key/webhook is configured. The API health
+  on the preview branch. Migrations `011_resend_delivery_events.sql` and
+  `012_lead_manager_and_exports.sql` are source complete but have **not** been
+  applied. They must run before the related Worker source is deployed or any
+  Resend key/webhook is configured. The API health
   endpoint reports both service and database `ok`. Only `DATABASE_URL` and
   `RATE_LIMIT_SALT` are configured as API Worker secrets; Resend and Stripe
   credentials are intentionally absent.
@@ -92,6 +93,10 @@ production data has been copied to either provider.
   controls.
 - Source-complete staff quote issuance, customer-owned acceptance, worker-locked
   booking preparation/invoice snapshot, and audited booking transitions.
+- Source-complete `lead_manager` role for Christine with only lead/prospect/
+  outreach/follow-up and audited CSV-export capabilities. Payment issuance now
+  requires the separate `payments.issue` permission, held by the owner role and
+  absent from `lead_manager`.
 - Ownership-scoped customer booking/payment/recurring-plan APIs, approved-worker
   lookup, explicit-approval recurring-plan creation and staff resolution.
 - An ownership-scoped, dependency-free invoice PDF generated from the approved
@@ -118,14 +123,15 @@ production data has been copied to either provider.
   retains a payload-bound idempotency key, and the customer portal hides payment
   links unless test mode is explicitly enabled.
 
-The edge package now has a lockfile. Strict TypeScript, 27 Vitest cases, the
+The edge package now has a lockfile. Strict TypeScript, 36 Vitest cases, the
 Wrangler dry-run bundle, the frontend typecheck, standard Next.js production
 build/14-route smoke test, tracking test, vinext compatibility check, Cloudflare
 build, and local workerd route smoke test all pass. The recovery cron is hourly,
 not every minute, so an idle Neon Free database can scale to zero. Migration 010
 was applied to the isolated database, and `/up` plus `/api/v1/catalog` pass on
-the deployed API. The frontend improvements are deployed; migration 011 and its
-API webhook source are tested locally but remain unapplied and undeployed.
+the deployed API. The previously completed frontend improvements are deployed;
+migrations 011/012 and their API/UI source are tested locally but remain
+unapplied and undeployed.
 The deployed mobile quote page shows all 50 states and Washington, DC by full
 name while submitting a validated two-letter code, the approved public email and
 clickable phone, and no payment control.
@@ -164,11 +170,18 @@ workflow has passed.
    until the zone is active.
 6. No Stripe sandbox is connected and no test key/webhook is configured. The
    connected Stripe account is live-only and must not be used for migration
-   testing. Live payments remain disabled.
+   testing. Source-level hosted-invoice, signature, replay, mismatch,
+   out-of-order, environment, idempotency, and permission checks pass, but that
+   is not provider sandbox evidence. Live payments remain disabled.
+7. Signed-in Neon, Resend, Cloudflare, and Stripe dashboard access is not
+   available in the controlled browser session. Provider login is required to
+   apply migrations, create write-only credentials, enable Managed Auth, and
+   execute the sandbox/browser acceptance tests.
 
 ## Next three actions
 
-1. Apply `011_resend_delivery_events.sql`, run `008_validate.sql`, and verify the
+1. Apply `011_resend_delivery_events.sql` and
+   `012_lead_manager_and_exports.sql`, run `008_validate.sql`, and verify the
    four known synthetic outbox rows are quarantined before deploying the updated
    API. Then configure a restricted Resend key and one verified webhook, prove
    one new synthetic delivery, and prove an idempotent replay sends nothing twice.
@@ -179,6 +192,11 @@ workflow has passed.
    path or the owner separately changes the $0 constraint. Export read-only,
    record source counts, import rows into the isolated branch, reset sequences,
    and reconcile every table and relationship before any DNS cutover.
+
+The no-cost Railway export/grace message is prepared in
+[`migration/RAILWAY_SUPPORT_REQUEST.md`](migration/RAILWAY_SUPPORT_REQUEST.md).
+Stripe sandbox and future live-mode boundaries are recorded in
+[`migration/STRIPE_LIVE_READINESS.md`](migration/STRIPE_LIVE_READINESS.md).
 
 ## Cutover rule
 
