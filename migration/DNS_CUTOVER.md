@@ -54,8 +54,8 @@ server-side Resend API key is still required in the API Worker, and delivery to
 
 ## Ordered cutover and rollback
 
-1. Finish browser quote success, Resend delivery/replay, staff auth, production
-   data reconciliation, and rollback checks on the `workers.dev` preview.
+1. Finish Resend delivery/replay, staff auth, production data reconciliation,
+   and rollback checks on the `workers.dev` preview.
 2. Configure and verify inbound support-mail routing while the Cloudflare zone
    is still pending where possible; preserve every required provider record.
 3. At GoDaddy, verify DNSSEC/DS state, then replace only the authoritative
