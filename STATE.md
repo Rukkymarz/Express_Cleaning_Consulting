@@ -1,17 +1,17 @@
 # Express Cleaning Consult — current state
 
-Updated 2026-11-03 03:27 CST (America/Chicago).
+Updated 2026-11-03 03:41 CST (America/Chicago).
 
 ## Launch status
 
-- Source branch: `codex/cloudflare-neon-migration`; deployed API configuration
-  baseline: `aa2a08f`.
+- Source branch: `codex/cloudflare-neon-migration`; deployed API source
+  baseline: `d10a0c7`.
 - Runtime target: Cloudflare Workers for the web/API and Neon Postgres for
   application data. Railway is no longer in the live request path.
 - Web Worker: `express-cleaning-consult-web`, version
   `57e6e74b-965c-4c25-90ec-cbd47eab5572`.
 - API Worker: `express-cleaning-edge-api`, version
-  `67a149f7-304c-43f4-b939-cf0068ac9271`.
+  `f62136c8-19ce-432a-bcaf-173c638959b3`.
 - API health: `https://express-cleaning-edge-api.rukkymarz.workers.dev/up`
   returns service and database `ok`.
 - GoDaddy now delegates `expresscleaningconsult.com` to
@@ -42,12 +42,10 @@ Updated 2026-11-03 03:27 CST (America/Chicago).
   request `received`, linked staff task `open`, notification `sent`.
 - Idempotency is enforced in the database workflow so a replay returns the same
   receipt and does not create a second task or notification.
-- The production request, linked task, and notification status prove the
-  deployed Neon workflow needed by the public quote path. Migrations
-  `011_resend_delivery_events.sql` and `012_lead_manager_and_exports.sql`, plus
-  `008_validate.sql`, remain source-complete but are not marked applied here
-  without a direct migration-ledger/validation result. Do not infer that result
-  from application behavior alone.
+- Neon SQL history confirms `011_resend_delivery_events.sql` and
+  `012_lead_manager_and_exports.sql` were executed on 2026-11-02. The current
+  `008_validate.sql` query was rerun on 2026-11-03 and all four statements
+  completed successfully without a validation exception.
 - The website includes the responsive design/contact/SEO work from `980bd91`.
   Unverified customer photos and testimonial claims are not presented as
   completed company work.
@@ -69,11 +67,18 @@ Updated 2026-11-03 03:27 CST (America/Chicago).
 - Owner and Christine permissions are implemented with the restricted
   `lead_manager` role. Christine's role excludes billing, secrets, user
   administration, payment issuance, and deletion.
-- The API now has the confirmed Neon `NEON_AUTH_URL`. Neon Auth is enabled for
-  the production branch, but its console currently has no users, no trusted
-  production domain, and still allows localhost. Until those provider settings
-  and the database identity/role mappings are completed, staff endpoints fail
-  closed and the owner/Christine login is not launch-ready.
+- The API has the confirmed Neon `NEON_AUTH_URL`. Neon Auth trusts only the apex
+  and `www` production domains; localhost authentication is disabled.
+- Provider identities were created and linked to application users:
+  `expressconsulting92@gmail.com` has the `owner` role and
+  `christinewealth789@gmail.com` has the exact `lead_manager` role. A direct
+  permission query confirms Christine has only `calls.place`, `leads.edit`,
+  `leads.export`, and `leads.view`.
+- The managed-auth proxy no longer sends synthetic `x-forwarded-host` headers,
+  which Neon rejected with `INVALID_HOSTNAME`. Anonymous admin access now fails
+  closed with `401 Please sign in` rather than a provider-configuration `503`.
+  Account invitation/password completion and an authenticated browser session
+  still need to be completed by each mailbox owner.
 - Stripe payment code is test-mode gated and only applies after an approved
   quote and prepared booking. It includes signature-verified webhooks,
   duplicate-event handling, ownership checks, server-derived amounts, and
@@ -105,7 +110,7 @@ Updated 2026-11-03 03:27 CST (America/Chicago).
   the existing quote-status endpoint pass. The authoritative apex redirect
   preserves paths and query strings.
 - API `/up` and the existing quote status endpoint pass against the deployed
-  Neon-backed API after version `67a149f7-304c-43f4-b939-cf0068ac9271`.
+  Neon-backed API after version `f62136c8-19ce-432a-bcaf-173c638959b3`.
 - Current API checks pass: strict TypeScript plus 36 Vitest tests across nine
   files. The Worker dry-run bundle completes. Previous checks include the
   Next.js/vinext production build, route smoke tests, and frontend tracking test.
@@ -114,18 +119,13 @@ Updated 2026-11-03 03:27 CST (America/Chicago).
 
 1. Verify Zoho mailbox delivery and publish the account-specific DKIM record if
    Zoho shows it as pending.
-2. In Neon Auth, add `https://www.expresscleaningconsult.com` (and the apex if
-   redirects are used during auth), disable localhost, create the approved
-   identities, and link their provider IDs to the database `owner` and
-   `lead_manager` memberships. This requires the owner's distinct email or an
-   explicit decision that one identity will hold only one of those roles.
-3. Verify the production migration ledger for `011`/`012`, run
-   `008_validate.sql`, and record the result without reapplying completed work.
-4. Connect or create a Stripe sandbox, configure its restricted key and signed
+2. Complete the Neon Auth invitation/password flow from each approved mailbox,
+   then browser-test owner and Christine sign-in and role-specific admin access.
+3. Connect or create a Stripe sandbox, configure its restricted key and signed
    webhook, then run the accepted-quote test matrix after the payment policy is
    confirmed. Do not enable live collection.
-5. Verify Resend's domain/webhook delivery event in its signed-in dashboard;
+4. Verify Resend's domain/webhook delivery event in its signed-in dashboard;
    the deployed secret bindings and application notification status are present,
    but provider delivery is not claimed without the provider event.
-6. Preserve/export Railway data through a no-cost support path before the
+5. Preserve/export Railway data through a no-cost support path before the
    reported deletion deadline.
