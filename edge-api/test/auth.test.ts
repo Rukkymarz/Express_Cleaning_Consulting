@@ -50,7 +50,9 @@ describe('managed auth proxy', () => {
 
     const [target, init] = provider.mock.calls[0] as [string, RequestInit];
     expect(target).toBe('https://auth.example.test/neondb/auth/sign-in/email');
-    expect(new Headers(init.headers).get('x-forwarded-host')).toBe('preview.example.test');
+    expect(new Headers(init.headers).get('origin')).toBe('https://preview.example.test');
+    expect(new Headers(init.headers).get('x-forwarded-host')).toBeNull();
+    expect(new Headers(init.headers).get('x-forwarded-proto')).toBeNull();
     expect(response.headers.get('location')).toBe('https://preview.example.test/api/v1/auth/callback/email?ok=1');
     const cookie = response.headers.get('set-cookie') ?? '';
     expect(cookie).not.toMatch(/Domain=/i);

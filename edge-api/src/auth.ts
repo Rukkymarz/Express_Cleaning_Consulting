@@ -17,16 +17,10 @@ function forwardedHeaders(request: Request): Headers {
     const value = request.headers.get(name);
     if (value) headers.set(name, value);
   }
-  const incoming = new URL(request.url);
-  let browserOrigin: URL | null = null;
-  try {
-    browserOrigin = request.headers.get('origin') ? new URL(request.headers.get('origin') as string) : null;
-  } catch {
-    browserOrigin = null;
-  }
-  const forwarded = browserOrigin?.protocol === 'https:' || browserOrigin?.protocol === 'http:' ? browserOrigin : incoming;
-  headers.set('x-forwarded-host', forwarded.host);
-  headers.set('x-forwarded-proto', forwarded.protocol.replace(':', ''));
+  // Neon Auth validates its own provider host. Supplying a synthetic
+  // x-forwarded-host for the website or Worker causes the managed provider to
+  // reject the request with INVALID_HOSTNAME, even when the browser Origin is
+  // trusted. The provider URL already establishes the correct HTTPS host.
   return headers;
 }
 
