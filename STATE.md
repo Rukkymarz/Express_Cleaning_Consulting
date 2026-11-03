@@ -1,6 +1,6 @@
 # Express Cleaning Consult — current state
 
-Updated 2026-11-03 02:45 CST (America/Chicago).
+Updated 2026-11-03 02:50 CST (America/Chicago).
 
 ## Launch status
 
@@ -9,7 +9,7 @@ Updated 2026-11-03 02:45 CST (America/Chicago).
 - Runtime target: Cloudflare Workers for the web/API and Neon Postgres for
   application data. Railway is no longer in the live request path.
 - Web Worker: `express-cleaning-consult-web`, version
-  `6e44bb4d-54bd-4258-91b7-6477e90eba64`.
+  `57e6e74b-965c-4c25-90ec-cbd47eab5572`.
 - API Worker: `express-cleaning-edge-api`, version
   `3a8092e1-a944-4ae2-bff4-66e31c79ac30`.
 - API health: `https://express-cleaning-edge-api.rukkymarz.workers.dev/up`
@@ -21,8 +21,11 @@ Updated 2026-11-03 02:45 CST (America/Chicago).
   `www`. A manual activation recheck cleared the cached GoDaddy delegation and
   Cloudflare changed the zone to `active` at 2026-11-03 08:46:04 UTC.
 - Authoritative DNS now returns Cloudflare edge addresses for both hostnames.
-  Universal SSL is enabled with Let's Encrypt, but the new certificate pack was
-  still provisioning at the last check, so public HTTPS verification is pending.
+  Universal SSL is enabled with Let's Encrypt and the certificate is active.
+- `https://www.expresscleaningconsult.com/` returns `200` with valid TLS. At the
+  Cloudflare edge, the apex returns a permanent `308` to the same path and query
+  on `www`. Google Public DNS already returns Cloudflare addresses; one local/
+  1.1.1.1 cache still retained GoDaddy's former apex A record at the last check.
 
 ## Verified application behavior
 
@@ -54,9 +57,9 @@ Updated 2026-11-03 02:45 CST (America/Chicago).
 - Zoho inbox service and account-specific DKIM verification still require a
   signed-in Zoho check; DNS presence alone is not recorded as successful mailbox
   delivery.
-- Cloudflare's first Universal SSL certificate is the only remaining blocker to
-  the apex/`www` public web launch. Do not replace the Worker-managed read-only
-  DNS records manually.
+- The site and mail records are live on Cloudflare. Do not replace the
+  Worker-managed read-only DNS records manually while old recursive caches age
+  out.
 
 ## Security and payments
 
@@ -90,6 +93,9 @@ Updated 2026-11-03 02:45 CST (America/Chicago).
   `web/cloudflare.config.ts`.
 - The vinext production build and deployment completed; Cloudflare reported both
   custom-domain triggers attached.
+- Live TLS, `www` home/contact, `robots.txt`, `sitemap.xml`, public catalog, and
+  the existing quote-status endpoint pass. The authoritative apex redirect
+  preserves paths and query strings.
 - API `/up` and the existing quote status endpoint pass against the deployed
   Neon-backed API.
 - Previous repository checks include strict TypeScript, Vitest, Next.js/vinext
@@ -97,9 +103,8 @@ Updated 2026-11-03 02:45 CST (America/Chicago).
 
 ## Remaining actions
 
-1. Wait for Cloudflare Universal SSL provisioning, then verify TLS, apex to `www`
-   redirect, home page, `robots.txt`, `sitemap.xml`, and the quote API through
-   the public domain.
+1. Allow the former GoDaddy apex A record to expire from remaining recursive
+   caches, then repeat a normal (non-forced) apex redirect check.
 2. Verify Zoho mailbox delivery and publish the account-specific DKIM record if
    Zoho shows it as pending.
 3. Configure and verify Managed Auth for the confirmed owner/Christine identity.

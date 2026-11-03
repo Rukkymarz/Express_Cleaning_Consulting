@@ -3,7 +3,7 @@ import { bindings, defineConfig, defineWorker } from "cf/config";
 export default defineConfig({
   worker: defineWorker({
     name: "express-cleaning-consult-web",
-    entrypoint: "vinext/server/fetch-handler",
+    entrypoint: "./worker.ts",
     domains: [
       "expresscleaningconsult.com",
       "www.expresscleaningconsult.com",
