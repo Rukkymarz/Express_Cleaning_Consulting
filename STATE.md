@@ -1,6 +1,6 @@
 # Express Cleaning Consult — current state
 
-Updated 2026-11-03 03:41 CST (America/Chicago).
+Updated 2026-11-03 (America/Chicago).
 
 ## Launch status
 
@@ -9,7 +9,7 @@ Updated 2026-11-03 03:41 CST (America/Chicago).
 - Runtime target: Cloudflare Workers for the web/API and Neon Postgres for
   application data. Railway is no longer in the live request path.
 - Web Worker: `express-cleaning-consult-web`, version
-  `57e6e74b-965c-4c25-90ec-cbd47eab5572`.
+  `51c25508-e2f3-4eee-b9a2-44b3ab681fed`.
 - API Worker: `express-cleaning-edge-api`, version
   `f62136c8-19ce-432a-bcaf-173c638959b3`.
 - API health: `https://express-cleaning-edge-api.rukkymarz.workers.dev/up`
@@ -77,17 +77,28 @@ Updated 2026-11-03 03:41 CST (America/Chicago).
 - The managed-auth proxy no longer sends synthetic `x-forwarded-host` headers,
   which Neon rejected with `INVALID_HOSTNAME`. Anonymous admin access now fails
   closed with `401 Please sign in` rather than a provider-configuration `503`.
-  Account invitation/password completion and an authenticated browser session
-  still need to be completed by each mailbox owner.
+  Public `/forgot-password` and `/reset-password` pages are now deployed, and
+  the login page links to the secure setup/reset flow. Account completion and
+  an authenticated browser session still require each mailbox owner to use the
+  time-limited link sent to their own inbox.
+- Resend now has provider-level proof: `expresscleaningconsult.com` is verified,
+  the production webhook is enabled with seven delivery lifecycle event types,
+  and its signed delivery event returned `200 {"received":true}`. The exact
+  synthetic receipt `01M6DPCHGFSTT7RF748AAV0J7C` appears once in the delivered
+  event payload addressed to `expressconsulting92@gmail.com`, from
+  `support@expresscleaningconsult.com`. The active server key is restricted to
+  sending access. One unused duplicate sending-only key remains untouched and
+  should be revoked only with explicit approval.
 - Stripe payment code is test-mode gated and only applies after an approved
   quote and prepared booking. It includes signature-verified webhooks,
   duplicate-event handling, ownership checks, server-derived amounts, and
   duplicate-invoice protection.
-- Stripe sandbox secrets/webhook are not configured in the deployed Worker. The
-  connected Stripe session exposes only the live Express Clean Consult account,
-  so it was deliberately not used for sandbox writes or invoices. Provider-level
-  success/failure/replay testing remains blocked. Live collection remains
-  disabled and no real invoice or charge has been issued.
+- The signed-in Stripe dashboard exposes the Express Clean Consult sandbox, and
+  the code's exact least-privilege server permissions are Customer write plus
+  Invoice write. No restricted sandbox key or webhook exists yet; their creation
+  is waiting at the action-time confirmation boundary. Provider-level
+  success/failure/replay testing therefore remains blocked. Live collection
+  remains disabled and no real invoice or charge has been issued.
 - Payment policy still needs an explicit business decision: deposit versus full
   payment, deposit amount/percentage, balance timing, taxes, cancellation/
   refund/rescheduling/no-show terms, and whether partial payments are allowed.
@@ -104,8 +115,10 @@ Updated 2026-11-03 03:41 CST (America/Chicago).
 
 - Frontend typecheck and tracking tests pass with both custom domains in
   `web/cloudflare.config.ts`.
-- The vinext production build and deployment completed; Cloudflare reported both
-  custom-domain triggers attached.
+- The vinext production build and deployment completed with the password setup
+  routes included; Cloudflare reported both custom-domain triggers attached.
+- Live `/`, `/login`, `/forgot-password`, and `/reset-password` return `200`;
+  the apex password-reset route redirects to canonical `www` and returns `200`.
 - Live TLS, `www` home/contact, `robots.txt`, `sitemap.xml`, public catalog, and
   the existing quote-status endpoint pass. The authoritative apex redirect
   preserves paths and query strings.
@@ -119,13 +132,10 @@ Updated 2026-11-03 03:41 CST (America/Chicago).
 
 1. Verify Zoho mailbox delivery and publish the account-specific DKIM record if
    Zoho shows it as pending.
-2. Complete the Neon Auth invitation/password flow from each approved mailbox,
-   then browser-test owner and Christine sign-in and role-specific admin access.
-3. Connect or create a Stripe sandbox, configure its restricted key and signed
-   webhook, then run the accepted-quote test matrix after the payment policy is
-   confirmed. Do not enable live collection.
-4. Verify Resend's domain/webhook delivery event in its signed-in dashboard;
-   the deployed secret bindings and application notification status are present,
-   but provider delivery is not claimed without the provider event.
-5. Preserve/export Railway data through a no-cost support path before the
+2. Send the Neon Auth password links, then have each mailbox owner choose their
+   own password and browser-test owner/Christine role-specific access.
+3. Create the prepared Stripe sandbox restricted key and signed webhook after
+   action-time confirmation, then run the accepted-quote test matrix after the
+   payment policy is confirmed. Do not enable live collection.
+4. Preserve/export Railway data through a no-cost support path before the
    reported deletion deadline.
