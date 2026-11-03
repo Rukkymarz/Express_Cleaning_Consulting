@@ -4,6 +4,10 @@ export default defineConfig({
   worker: defineWorker({
     name: "express-cleaning-consult-web",
     entrypoint: "vinext/server/fetch-handler",
+    domains: [
+      "expresscleaningconsult.com",
+      "www.expresscleaningconsult.com",
+    ],
     compatibilityDate: "2026-11-02",
     compatibilityFlags: ["nodejs_compat"],
     assets: {
