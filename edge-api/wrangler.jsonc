@@ -8,9 +8,10 @@
   "triggers": { "crons": ["0 * * * *"] },
   "vars": {
     "CORS_ALLOWED_ORIGINS": "https://express-cleaning-consult-web.rukkymarz.workers.dev,https://www.expresscleaningconsult.com,https://expresscleaningconsult.com",
+    "NEON_AUTH_URL": "https://ep-late-truth-b4zs2671.neonauth.c-6.us-east-2.aws.neon.tech/neondb/auth",
     "MAIL_FROM_ADDRESS": "support@expresscleaningconsult.com",
     "QUOTE_NOTIFICATION_TO": "expressconsulting92@gmail.com",
-    "STAFF_REVIEW_URL": "https://express-cleaning-consult-web.rukkymarz.workers.dev/admin",
+    "STAFF_REVIEW_URL": "https://www.expresscleaningconsult.com/admin",
     "REVIEW_DELAY_HOURS": "24",
     "STRIPE_PAYMENTS_MODE": "disabled",
     "STRIPE_LIVE_PAYMENTS_ENABLED": "false"
