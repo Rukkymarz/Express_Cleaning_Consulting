@@ -33,7 +33,8 @@ export function checkOpsToken(authorization: string | undefined, configured: str
   if (!configured || configured.length < MIN_OPS_TOKEN_LENGTH) return 'unconfigured';
   const match = /^Bearer (\S+)$/.exec(authorization ?? '');
   if (!match) return 'unauthorized';
-  return constantTimeEqual(match[1], configured) ? 'ok' : 'unauthorized';
+  const presented = match[1] ?? '';
+  return constantTimeEqual(presented, configured) ? 'ok' : 'unauthorized';
 }
 
 const iso = (value: string | Date | null): string | null =>
