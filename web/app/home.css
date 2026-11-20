@@ -197,3 +197,5 @@
 .ecc-home{overflow-x:clip}
 /* Touch targets: quote CTA must clear 44px */
 .ecc-quote-action .ecc-button{min-height:48px}
+/* Mobile top bar: keep to one line at 375px */
+@media(max-width:700px){.ecc-topbar .ecc-wrap>span{max-width:none;letter-spacing:.02em;font-size:12px}.ecc-topbar a{font-size:13px;white-space:nowrap}}
