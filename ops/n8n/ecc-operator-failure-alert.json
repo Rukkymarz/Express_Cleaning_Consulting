@@ -1,0 +1,368 @@
+{
+  "name": "ECC - Operator failure alert (A01)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 15
+            }
+          ]
+        }
+      },
+      "name": "Every 15 minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://express-cleaning-edge-api.rukkymarz.workers.dev/api/v1/ops/delivery-health",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 10000,
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true,
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "name": "Probe delivery health",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        240,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "onError": "continueRegularOutput",
+      "notes": "Credential: create an 'HTTP Header Auth' credential named 'ECC Ops Health Token' (Name: Authorization, Value: Bearer <token>). Stored encrypted by n8n; never in this file."
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "// A01 deterministic evaluator for the n8n \"ECC - Operator failure alert\" workflow.\n// Pure function: no model calls, no I/O. The build script embeds this file\n// verbatim in the workflow's Code node, and test/evaluate.test.mjs runs it.\n//\n// Input  : one HTTP probe result + the persisted monitor state.\n// Output : { action, state, alert } where action is one of\n//          'none' | 'alert' | 'recovery' | 'terminal'\n//\n// Rules\n// - Dedupe: an alert with the same fingerprint is not re-sent until\n//   REALERT_MS has passed. A changed fingerprint (new problem class, new\n//   failure timestamp) alerts immediately.\n// - Monitor failures (timeout, network, 5xx, bad JSON) are counted; after\n//   TERMINAL_AFTER consecutive failures the monitor itself enters a visible\n//   terminal state ('terminal' action -> Stop and Error node).\n// - 401/503-unconfigured are configuration faults: terminal immediately.\n// - Recovery is announced once when an alerting/terminal state clears.\n\nconst REALERT_MS = 6 * 60 * 60 * 1000;\nconst TERMINAL_AFTER = 3;\n\nfunction fingerprintOf(parts) {\n  return parts.filter(Boolean).join('|');\n}\n\nfunction evaluate(probe, previous, nowMs) {\n  const prev = {\n    lastFingerprint: null,\n    lastAlertAt: 0,\n    consecutiveProbeFailures: 0,\n    mode: 'ok', // ok | alerting | terminal\n    ...(previous || {}),\n  };\n  const now = typeof nowMs === 'number' ? nowMs : Date.now();\n  const code = Number(probe && probe.statusCode) || 0;\n  const body = probe && typeof probe.body === 'object' && probe.body !== null ? probe.body : null;\n\n  // 1. Configuration faults: retrying cannot fix these.\n  if (code === 401 || (code === 503 && body && /not configured/i.test(String(body.message || '')))) {\n    const fp = fingerprintOf(['config', String(code)]);\n    const state = { ...prev, consecutiveProbeFailures: prev.consecutiveProbeFailures + 1, mode: 'terminal' };\n    const repeat = prev.lastFingerprint === fp && now - prev.lastAlertAt < REALERT_MS;\n    if (!repeat) { state.lastFingerprint = fp; state.lastAlertAt = now; }\n    return {\n      action: repeat ? 'none' : 'terminal',\n      state,\n      alert: {\n        severity: 'critical',\n        title: code === 401 ? 'Monitor token rejected by API' : 'Monitor endpoint not configured on API',\n        problems: [code === 401 ? 'monitor_unauthorized' : 'monitor_unconfigured'],\n        fingerprint: fp,\n      },\n    };\n  }\n\n  // 2. Probe failure: timeout, network error, 5xx without a health body, bad JSON.\n  const validBody = body && body.schema === 'ecc.delivery-health.v1' && Array.isArray(body.problems || []);\n  const databaseDown = validBody && body.status === 'degraded';\n  if (!validBody || (code >= 500 && !databaseDown) || code === 0) {\n    const failures = prev.consecutiveProbeFailures + 1;\n    const state = { ...prev, consecutiveProbeFailures: failures };\n    if (failures < TERMINAL_AFTER) return { action: 'none', state, alert: null };\n    const fp = fingerprintOf(['probe', 'unreachable']);\n    const repeat = prev.lastFingerprint === fp && now - prev.lastAlertAt < REALERT_MS;\n    state.mode = 'terminal';\n    if (!repeat) { state.lastFingerprint = fp; state.lastAlertAt = now; }\n    return {\n      action: repeat ? 'none' : 'terminal',\n      state,\n      alert: {\n        severity: 'critical',\n        title: `Quote API unreachable for ${failures} consecutive checks`,\n        problems: ['monitor_unreachable', probe && probe.error ? String(probe.error).slice(0, 80) : `http_${code}`],\n        fingerprint: fp,\n      },\n    };\n  }\n\n  // 3. Valid health body.\n  const problems = databaseDown ? ['database_unavailable'] : body.problems.map(String);\n  const state = { ...prev, consecutiveProbeFailures: 0 };\n  if (problems.length === 0) {\n    const wasBad = prev.mode !== 'ok';\n    state.mode = 'ok';\n    state.lastFingerprint = null;\n    return wasBad\n      ? { action: 'recovery', state, alert: { severity: 'info', title: 'Quote delivery recovered', problems: [], fingerprint: 'recovered' } }\n      : { action: 'none', state, alert: null };\n  }\n\n  const fp = fingerprintOf(['delivery', problems.slice().sort().join(','), body.newest_problem_at || '']);\n  const repeat = prev.lastFingerprint === fp && now - prev.lastAlertAt < REALERT_MS;\n  state.mode = 'alerting';\n  if (!repeat) { state.lastFingerprint = fp; state.lastAlertAt = now; }\n  return {\n    action: repeat ? 'none' : 'alert',\n    state,\n    alert: {\n      severity: problems.some((p) => /^quote_|mail_not_configured|database_unavailable/.test(p)) ? 'critical' : 'warning',\n      title: `Quote/mail delivery problem: ${problems.join(', ')}`,\n      problems,\n      counts: body.counts || {},\n      oldestPendingMinutes: body.quote_oldest_pending_minutes ?? null,\n      newestProblemAt: body.newest_problem_at || null,\n      fingerprint: fp,\n    },\n  };\n}\n\nif (typeof module !== 'undefined') module.exports = { evaluate, REALERT_MS, TERMINAL_AFTER };\n\n// ---- n8n glue (deterministic; no model calls) ----\nconst staticData = $getWorkflowStaticData('global');\nconst item = $input.first().json || {};\nconst probe = item.error\n  ? { statusCode: 0, error: String(item.error.message || item.error.code || item.error).slice(0, 120) }\n  : { statusCode: item.statusCode, body: item.body };\nconst result = evaluate(probe, staticData.monitor, Date.now());\nstaticData.monitor = result.state;\nreturn [{ json: { ...result, probeStatus: probe.statusCode, checkedAt: new Date().toISOString() } }];\n"
+      },
+      "name": "Evaluate (deterministic)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "alert",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "alert"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "recovery",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "recovery"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "terminal",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "terminal"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra",
+          "renamedFallbackOutput": "none"
+        }
+      },
+      "name": "Route by action",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        720,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "s1",
+              "name": "subject",
+              "type": "string",
+              "value": "=[ECC {{ $json.alert.severity.toUpperCase() }}] {{ $json.alert.title }}"
+            },
+            {
+              "id": "s2",
+              "name": "text",
+              "type": "string",
+              "value": "={{ $json.alert.title }}\nProblems: {{ ($json.alert.problems || []).join(', ') || 'none' }}\nCounts: {{ JSON.stringify($json.alert.counts || {}) }}\nOldest pending (min): {{ $json.alert.oldestPendingMinutes ?? 'n/a' }}\nChecked: {{ $json.checkedAt }}\nAction: open https://www.expresscleaningconsult.com/admin/inquiries and the Cloudflare Worker logs for express-cleaning-edge-api."
+            },
+            {
+              "id": "s3",
+              "name": "fingerprint",
+              "type": "string",
+              "value": "={{ $json.alert.fingerprint }}"
+            },
+            {
+              "id": "s4",
+              "name": "action",
+              "type": "string",
+              "value": "={{ $json.action }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Format message",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        960,
+        -100
+      ]
+    },
+    {
+      "parameters": {},
+      "name": "SEND ALERT - destination not chosen",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1200,
+        -100
+      ],
+      "disabled": true,
+      "notes": "Placeholder. Replace with the destination the owner approves (e.g. Gmail/SMTP node or Telegram). Keep it disabled until then. Give it timeout 15s, Retry On Fail max 3 / 10s."
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $('Format message').item.json.action }}",
+              "rightValue": "terminal",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Terminal state?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1440,
+        -100
+      ]
+    },
+    {
+      "parameters": {
+        "errorMessage": "={{ $('Format message').item.json.subject }}"
+      },
+      "name": "Monitor terminal failure",
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        1680,
+        -180
+      ],
+      "notes": "Visible terminal state: the execution is marked Error in n8n's Executions list."
+    },
+    {
+      "parameters": {},
+      "name": "No action",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        960,
+        140
+      ]
+    }
+  ],
+  "connections": {
+    "Every 15 minutes": {
+      "main": [
+        [
+          {
+            "node": "Probe delivery health",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Probe delivery health": {
+      "main": [
+        [
+          {
+            "node": "Evaluate (deterministic)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Evaluate (deterministic)": {
+      "main": [
+        [
+          {
+            "node": "Route by action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by action": {
+      "main": [
+        [
+          {
+            "node": "Format message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Format message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Format message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format message": {
+      "main": [
+        [
+          {
+            "node": "SEND ALERT - destination not chosen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SEND ALERT - destination not chosen": {
+      "main": [
+        [
+          {
+            "node": "Terminal state?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Terminal state?": {
+      "main": [
+        [
+          {
+            "node": "Monitor terminal failure",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "executionTimeout": 120,
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "none",
+    "timezone": "America/New_York"
+  },
+  "pinData": {},
+  "tags": []
+}

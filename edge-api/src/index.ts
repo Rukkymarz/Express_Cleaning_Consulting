@@ -3,6 +3,8 @@ import { HTTPException } from 'hono/http-exception';
 import { ulid } from 'ulid';
 import { proxyAuth, validatedSession } from './auth';
 import { allowedOrigins, enabled, isEmail, isHttpsUrl, paymentsMode } from './config';
+import { checkOpsToken, deliveryHealthBody } from './ops';
+import { mailConfigurationError } from './mail';
 import {
   acceptCustomerQuote,
   checkDatabase,
@@ -15,6 +17,7 @@ import {
   createPublicIntake,
   exportStaffLeads,
   getCatalog,
+  getDeliveryHealth,
   getAccountContext,
   getAccountBooking,
   getAccountInvoice,
@@ -1027,6 +1030,22 @@ app.post('/api/v1/requests', async (c) => {
     }
     console.error('Quote request persistence failed.', { error: safeErrorName(error) });
     return c.json({ message: 'We could not save your request right now. Please retry, or call (281) 972-7712. Retrying with the same request will not create a duplicate.' }, 503);
+  }
+});
+
+app.get('/api/v1/ops/delivery-health', async (c) => {
+  // A01: machine monitor endpoint. Bearer token only; aggregate counts only.
+  const auth = checkOpsToken(c.req.header('Authorization'), c.env.OPS_HEALTH_TOKEN);
+  if (auth === 'unconfigured') return c.json({ message: 'Operator health monitoring is not configured.' }, 503);
+  if (auth === 'unauthorized') return c.json({ message: 'Unauthorized.' }, 401);
+  const limited = await enforceRateLimit(c.env, c, 'ops-health', 30, 60);
+  if (limited) return limited;
+  try {
+    const row = await getDeliveryHealth(c.env, 30);
+    return c.json(deliveryHealthBody(row, mailConfigurationError(c.env) ?? null));
+  } catch (error) {
+    console.error('Delivery health query failed.', { error: safeErrorName(error) });
+    return c.json({ schema: 'ecc.delivery-health.v1', status: 'degraded', problems: ['database_unavailable'] }, 503);
   }
 });
 

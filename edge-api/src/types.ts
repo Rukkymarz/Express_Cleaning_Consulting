@@ -14,6 +14,7 @@ export interface Env {
   STRIPE_LIVE_PAYMENTS_ENABLED?: string;
   STRIPE_API_KEY?: string;
   STRIPE_WEBHOOK_SECRET?: string;
+  OPS_HEALTH_TOKEN?: string;
 }
 
 export interface QuoteNotificationPayload {

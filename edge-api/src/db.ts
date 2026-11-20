@@ -1,3 +1,4 @@
+import type { DeliveryHealthRow } from './ops';
 import { neon } from '@neondatabase/serverless';
 import type { PreparedTestInvoice } from './stripe-api';
 import type { CallbackRequest } from './validation';
@@ -964,4 +965,12 @@ export async function processStripeEvent(
   const result = (rows as unknown as StripeEventResult[])[0];
   if (!result) throw new Error('Stripe workflow returned no result.');
   return result;
+}
+
+export async function getDeliveryHealth(env: Env, stuckMinutes = 30): Promise<DeliveryHealthRow> {
+  const sql = sqlFor(env);
+  const rows = await sql`select * from app.ops_delivery_health(${stuckMinutes}::integer)`;
+  const row = (rows as unknown as DeliveryHealthRow[])[0];
+  if (!row) throw new Error('Delivery health returned no row.');
+  return row;
 }
