@@ -22,7 +22,7 @@ That is a separate decision for the owner.
 | PII-free aggregate query (SECURITY DEFINER, runtime role only) | `migration/neon/013_ops_delivery_health.sql` |
 | `GET /api/v1/ops/delivery-health` (Bearer token, 30/min, fails closed) | `edge-api/src/ops.ts`, `edge-api/src/index.ts` |
 | Deterministic evaluator (dedupe, bounded failures, terminal, recovery) | `ops/n8n/evaluate.js` |
-| n8n workflow (built from the evaluator; **inactive**, sender **disabled**) | `ops/n8n/ecc-operator-failure-alert.json` |
+| n8n workflow (built from the evaluator; **inactive** until the backend is live; alerts go to Gmail) | `ops/n8n/ecc-operator-failure-alert.json` |
 | Tests | `edge-api/test/ops.test.ts`, `ops/n8n/test/evaluate.test.cjs` |
 
 Rebuild the workflow after editing the evaluator: `python3 ops/n8n/build_workflow.py`.
@@ -50,11 +50,13 @@ The terminal state ends in a *Stop and Error* node, so the run shows as
 4. In n8n, create an **HTTP Header Auth** credential named `ECC Ops Health Token`
    (Name `Authorization`, Value `Bearer <token>`). n8n stores it encrypted.
    Import the workflow and attach the credential to *Probe delivery health*.
-5. Replace *SEND ALERT – destination not chosen* with the approved destination
-   node. Set a 15 s timeout and Retry On Fail (max 3, 10 s apart). Then activate the workflow.
+5. Destination (approved 2026-11-20): Gmail to expressconsulting92@gmail.com.
+   Create a **Gmail OAuth2** credential named `ECC Gmail alerts` and attach it to
+   *Send alert (Gmail)*. The node retries 3 times, 10 s apart. Activate the workflow
+   only after `/api/v1/ops/delivery-health` returns 200 with your token.
 
 ## Isolated test (no real sends)
 
-Run `node --test ops/n8n/test/evaluate.test.cjs` with the destination node disabled.
+Run `node --test ops/n8n/test/evaluate.test.cjs`. To test in n8n without emailing, disable *Send alert (Gmail)* first.
 For an end-to-end failure test, point the HTTP node at a non-existent path so
 the third run goes terminal. No production data is touched.

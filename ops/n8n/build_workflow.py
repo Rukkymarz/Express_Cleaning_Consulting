@@ -50,8 +50,14 @@ nodes = [
             {"id": "s3", "name": "fingerprint", "type": "string", "value": "={{ $json.alert.fingerprint }}"},
             {"id": "s4", "name": "action", "type": "string", "value": "={{ $json.action }}"},
         ]}, "options": {}}),
-    node("SEND ALERT - destination not chosen", "n8n-nodes-base.noOp", 1, [1200, -100], {}, disabled=True,
-         notes="Placeholder. Replace with the destination the owner approves (e.g. Gmail/SMTP node or Telegram). Keep it disabled until then. Give it timeout 15s, Retry On Fail max 3 / 10s."),
+    node("Send alert (Gmail)", "n8n-nodes-base.gmail", 2.1, [1200, -100], {
+        "sendTo": "expressconsulting92@gmail.com",
+        "subject": "={{ $json.subject }}",
+        "emailType": "text",
+        "message": "={{ $json.text }}",
+        "options": {"appendAttribution": False},
+    }, retryOnFail=True, maxTries=3, waitBetweenTries=10000, onError="continueRegularOutput",
+       notes="Owner-approved destination (2026-11-20). Credential: Gmail OAuth2 named 'ECC Gmail alerts' (stored encrypted by n8n). Bounded: 3 tries, 10s apart; the 120s execution cap is the hard timeout. A failed send still continues to the terminal check."),
     node("Terminal state?", "n8n-nodes-base.if", 2.2, [1440, -100], {
         "conditions": {"options": {"caseSensitive": True, "typeValidation": "strict", "version": 2}, "combinator": "and",
                        "conditions": [{"leftValue": "={{ $('Format message').item.json.action }}", "rightValue": "terminal",
@@ -67,8 +73,8 @@ connections = {
     "Probe delivery health": conn("Evaluate (deterministic)"),
     "Evaluate (deterministic)": conn("Route by action"),
     "Route by action": conn("Format message", "Format message", "Format message", "No action"),
-    "Format message": conn("SEND ALERT - destination not chosen"),
-    "SEND ALERT - destination not chosen": conn("Terminal state?"),
+    "Format message": conn("Send alert (Gmail)"),
+    "Send alert (Gmail)": conn("Terminal state?"),
     "Terminal state?": conn("Monitor terminal failure", None),
 }
 wf = {

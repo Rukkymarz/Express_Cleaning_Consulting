@@ -189,16 +189,27 @@
       ]
     },
     {
-      "parameters": {},
-      "name": "SEND ALERT - destination not chosen",
-      "type": "n8n-nodes-base.noOp",
-      "typeVersion": 1,
+      "parameters": {
+        "sendTo": "expressconsulting92@gmail.com",
+        "subject": "={{ $json.subject }}",
+        "emailType": "text",
+        "message": "={{ $json.text }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "name": "Send alert (Gmail)",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
       "position": [
         1200,
         -100
       ],
-      "disabled": true,
-      "notes": "Placeholder. Replace with the destination the owner approves (e.g. Gmail/SMTP node or Telegram). Keep it disabled until then. Give it timeout 15s, Retry On Fail max 3 / 10s."
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 10000,
+      "onError": "continueRegularOutput",
+      "notes": "Owner-approved destination (2026-11-20). Credential: Gmail OAuth2 named 'ECC Gmail alerts' (stored encrypted by n8n). Bounded: 3 tries, 10s apart; the 120s execution cap is the hard timeout. A failed send still continues to the terminal check."
     },
     {
       "parameters": {
@@ -324,14 +335,14 @@
       "main": [
         [
           {
-            "node": "SEND ALERT - destination not chosen",
+            "node": "Send alert (Gmail)",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "SEND ALERT - destination not chosen": {
+    "Send alert (Gmail)": {
       "main": [
         [
           {
