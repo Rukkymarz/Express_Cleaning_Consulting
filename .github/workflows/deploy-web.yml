@@ -1,11 +1,11 @@
 name: Deploy web
 
-# Deploys ONLY when a tag like deploy-web-2026-11-19 is pushed (or run manually).
+# Deploys ONLY when commits are pushed to the deploy/web branch (or run manually).
 # Never on ordinary pushes. Requires repo secrets CLOUDFLARE_API_TOKEN and
 # CLOUDFLARE_ACCOUNT_ID. Rollback: npx wrangler rollback --name express-cleaning-consult-web
 on:
   push:
-    tags: ['deploy-web-*']
+    branches: ['deploy/web']
   workflow_dispatch:
 
 concurrency:
