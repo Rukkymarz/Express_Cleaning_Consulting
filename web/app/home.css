@@ -36,14 +36,14 @@
 .ecc-photo-pressure{background-image:url('/gallery/exterior-stairs-after.webp')}
 .ecc-image-credit{font-size:11px;line-height:1.5;color:#57666b;margin-top:20px}
 .ecc-image-credit a{text-decoration:underline;text-underline-offset:2px}
-.ecc-guarantee{font-size:11px!important;line-height:1.5!important;max-width:350px;color:inherit;opacity:.8;margin:12px 0 0!important;letter-spacing:0!important;}
+.ecc-guarantee{font-size:13px!important;line-height:1.5!important;max-width:350px;color:inherit;margin:12px 0 0!important;letter-spacing:0!important;}
 .ecc-areas{display:grid;grid-template-columns:1.1fr 1fr;gap:70px;align-items:center;border-top:1px solid #dce5e1;}.ecc-areas p{max-width:550px;line-height:1.7;}.ecc-muted{font-size:13px;color:#596c70;}.ecc-zip-form{padding:30px;background:#eaf1ec;border-radius:16px;}.ecc-zip-form label{display:block;font-weight:700;margin-bottom:12px;}.ecc-zip-form>div{display:flex;gap:10px;}.ecc-zip-form input{width:130px;min-width:0;flex:1;border:1px solid #bccdc8;border-radius:5px;padding:13px;color:#172c32;background:white;}.ecc-zip-form small{display:block;font-size:11px;margin-top:14px;line-height:1.6;}.ecc-business-links{display:grid;grid-template-columns:1fr 1fr;gap:30px;padding-top:0;}.ecc-business-links article{background:white;border:1px solid #dce5e1;padding:36px;border-radius:12px;}.ecc-business-links h2{font-size:36px!important;}.ecc-business-links p{margin-bottom:25px;}.ecc-business-links .ecc-text-link{display:block;margin-top:16px;}.ecc-city-links{display:flex;gap:15px;flex-wrap:wrap;}
 .ecc-public-page{padding-top:65px!important;padding-bottom:80px!important;min-height:65vh;}.ecc-public-page h1{font-size:clamp(40px,6vw,72px);line-height:1.04;letter-spacing:-.05em;margin:18px 0 25px;}.ecc-public-page h1 em,.ecc-public-page h2 em{font-style:normal;color:#17666a;}.ecc-page-lead{font-size:20px;line-height:1.7;max-width:800px;}.ecc-feature-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin:45px 0;}.ecc-feature-grid article{border-top:1px solid #a65e3f;padding:24px 0;}.ecc-feature-grid h2{font-size:22px!important;}.ecc-feature-grid p{line-height:1.7;}.ecc-panel{max-width:850px;padding:38px;border:1px solid #dce5e1;border-radius:16px;background:white;}.ecc-panel h2{font-size:32px;}.ecc-panel>p{line-height:1.7;}.ecc-intake-form{display:grid;gap:20px;margin-top:24px;}.ecc-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;}.ecc-intake-form label{font-size:14px;font-weight:600;display:block;}.ecc-intake-form input:not([type=checkbox]),.ecc-intake-form textarea,.ecc-intake-form select{display:block;width:100%;border:1px solid #bacbc7;border-radius:7px;padding:13px;margin-top:8px;color:#172c32;background:white;font:inherit;min-height:48px;}.ecc-intake-form .ecc-check{display:flex;align-items:flex-start;gap:10px;font-weight:400;line-height:1.6;}.ecc-check input{width:18px;height:18px;flex-shrink:0;margin-top:3px;accent-color:#17666a;}.ecc-intake-form small,.ecc-form-privacy{font-size:11px;line-height:1.6;color:#516369;}.ecc-intake-form .ecc-button{justify-self:start;}.ecc-form-error{color:#a01f20;background:#fff0f0;padding:12px;}.ecc-form-success{background:#eaf3ef;padding:22px;border-radius:9px;}.ecc-trap{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);}.ecc-policy{max-width:800px;}.ecc-policy h2{font-size:24px!important;margin-top:32px;}.ecc-policy p{line-height:1.85;}.ecc-policy a{text-decoration:underline;}
 .ecc-offer-tab{position:fixed;bottom:18px;right:18px;background:#17666a;color:white;border:0;border-radius:50px;padding:14px 20px;font:700 13px inherit;z-index:45;box-shadow:0 5px 22px #123f4633;cursor:pointer;}.ecc-offer-dialog{color:#172c32;background:#f6f7f4;border:1px solid #bccdc8;border-radius:18px;width:min(520px,calc(100vw - 28px));padding:38px;max-height:88dvh;overflow:auto;box-shadow:0 20px 90px #172c3240;}.ecc-offer-dialog::backdrop{background:#102c33aa;backdrop-filter:blur(4px);}.ecc-offer-dialog h2{font-size:42px;line-height:1.05;letter-spacing:-.05em;margin:20px 0;}.ecc-offer-dialog h2 em{color:#17666a;font-style:normal;}.ecc-offer-dialog>p{font-size:15px;line-height:1.6;}.ecc-dialog-close{position:absolute;right:15px;top:10px;font-size:30px;line-height:1;background:none;border:0;cursor:pointer;padding:8px;}.ecc-discount-form .ecc-form-grid{grid-template-columns:1fr;}.ecc-skip-offer{background:none;border:0;text-decoration:underline;margin-top:20px;padding:10px 0;color:#516369;cursor:pointer;}.ecc-cookie-settings{position:fixed;bottom:12px;left:12px;z-index:44;border:1px solid #cad9d1;background:#fff;padding:9px 12px;border-radius:30px;font-size:11px;cursor:pointer;}.ecc-consent-choices{display:flex;gap:20px;margin:12px 0;font-size:13px;}.ecc-consent-buttons{display:flex;flex-wrap:wrap;gap:8px;}.ecc-consent-buttons button{min-width:100px;}.ecc-cookie-notice{z-index:70!important;}.ecc-footer-bottom{flex-wrap:wrap;gap:14px;}
-@media(max-width:800px){.ecc-areas,.ecc-business-links,.ecc-feature-grid{grid-template-columns:1fr;gap:25px;}.ecc-areas{padding-top:45px;padding-bottom:45px;}.ecc-public-page{padding-top:40px!important;}.ecc-panel{padding:24px;}.ecc-offer-dialog{padding:30px 24px;}.ecc-offer-tab{font-size:11px;padding:12px 15px;}.ecc-cookie-notice{max-height:60dvh;overflow:auto;}.ecc-consent-buttons{flex-direction:row!important;}.ecc-guarantee{font-size:10px!important;}}
+@media(max-width:800px){.ecc-areas,.ecc-business-links,.ecc-feature-grid{grid-template-columns:1fr;gap:25px;}.ecc-areas{padding-top:45px;padding-bottom:45px;}.ecc-public-page{padding-top:40px!important;}.ecc-panel{padding:24px;}.ecc-offer-dialog{padding:30px 24px;}.ecc-offer-tab{font-size:11px;padding:12px 15px;}.ecc-cookie-notice{max-height:60dvh;overflow:auto;}.ecc-consent-buttons{flex-direction:row!important;}.ecc-guarantee{font-size:13px!important;}}
 @media(max-width:520px){.ecc-form-grid{grid-template-columns:1fr;}.ecc-zip-form{padding:22px;}.ecc-zip-form>div{flex-direction:column;}.ecc-zip-form input{width:100%;}.ecc-business-links article{padding:26px;}.ecc-public-page .ecc-nav-links{flex-wrap:wrap;}.ecc-contact-heading .ecc-guarantee{max-width:none;}}
 
-.ecc-header-guarantee{background:#eef3ef;text-align:center;padding:7px 20px;}.ecc-header-guarantee .ecc-guarantee{max-width:none;font-size:10px!important;margin:0!important;}.ecc-public-page .ecc-footer-bottom a{overflow-wrap:anywhere;}.ecc-nav-links{gap:20px;}@media(max-width:520px){.ecc-nav>.ecc-nav-links>.ecc-signin{max-width:none;}.ecc-nav .ecc-brand{font-size:16px;}.ecc-header-guarantee .ecc-guarantee{font-size:9px!important;}.ecc-public-page .ecc-nav-links{gap:8px;}.ecc-public-page .ecc-button{padding:12px 15px;}.ecc-service-card .ecc-guarantee{font-size:10px!important;}}
+.ecc-header-guarantee{background:#eef3ef;text-align:center;padding:7px 20px;}.ecc-header-guarantee .ecc-guarantee{max-width:none;font-size:12px!important;margin:0!important;}.ecc-public-page .ecc-footer-bottom a{overflow-wrap:anywhere;}.ecc-nav-links{gap:20px;}@media(max-width:520px){.ecc-nav>.ecc-nav-links>.ecc-signin{max-width:none;}.ecc-nav .ecc-brand{font-size:16px;}.ecc-header-guarantee .ecc-guarantee{font-size:12px!important;}.ecc-public-page .ecc-nav-links{gap:8px;}.ecc-public-page .ecc-button{padding:12px 15px;}.ecc-service-card .ecc-guarantee{font-size:13px!important;}}
 
 /* Native dialog positioning after the global CSS reset. */
 .ecc-offer-dialog{margin:auto;}
@@ -52,3 +52,150 @@
 
 .ecc-home .ecc-quote-intro h2{font-size:20px;line-height:1.2;margin:0;}
 @media(max-width:700px){.ecc-hero .ecc-wrap{width:calc(100% - 36px);}}
+
+/* =====================================================================
+   Design system v2 — generated with UI/UX Pro Max v2.15.0
+   (pattern: Trust & Authority + Conversion; live petrol/copper brand retained)
+   Appended last so it overrides the legacy rules above site-wide.
+   ===================================================================== */
+.ecc-home{
+  /* live petrol/copper brand, tokenised */
+  --forest:#123f46;--forest-2:#1d5f68;--cream:#f6f7f4;--card:#ffffff;
+  --ink:#172c32;
+  --muted:#48585c;            /* 6.91:1 on cream */
+  --label:#8f4e31;            /* copper-dark labels, 6.3:1 */
+  --line:#dce3e0;
+  --copper:#a65e3f;
+  --accent:#a65e3f;           /* CTA copper, white text 4.89:1 */
+  --accent-2:#8f4e31;         /* hover, 6.36:1 */
+  --radius:8px;--ease:180ms ease;
+  font-family:var(--font-sans),Inter,ui-sans-serif,system-ui,sans-serif;
+  font-size:16px;line-height:1.6;
+}
+.ecc-home h1,.ecc-home h2,.ecc-home em{font-family:var(--font-sans),Inter,Arial,sans-serif;font-weight:800;letter-spacing:-.04em;color:var(--ink)}
+.ecc-approach h2,.ecc-approach em{color:#f6f7f4}
+
+/* Type scale floor: no text below 12px, body copy 15–16px */
+.ecc-topbar{font-size:14px}
+.ecc-nav-links{font-size:15px}
+.ecc-signin{font-size:14px}
+.ecc-button{font-size:15px}
+.ecc-nav-cta{font-size:15px}
+.ecc-eyebrow{font-size:14px}
+.ecc-text-link{font-size:15px}
+.ecc-small-note{font-size:14px}
+.ecc-hero-bottom{font-size:12px}
+.ecc-photo figcaption{font-size:12px}
+.ecc-photo-card p{font-size:12px}
+.ecc-assurance p{font-size:15px}
+.ecc-section-heading>p{font-size:16px}
+.ecc-service-top>span{font-size:14px}
+.ecc-service-card .ecc-eyebrow{font-size:12px}
+.ecc-service-description{font-size:15px}
+.ecc-service-card li a{font-size:14px}
+.ecc-approach-grid>div>p:not(.ecc-eyebrow){font-size:16px}
+.ecc-approach li p{font-size:15px}
+.ecc-faq summary{font-size:15px}
+.ecc-faq details>p{font-size:15px}
+.ecc-contact-heading p:not(.ecc-eyebrow){font-size:16px}
+.ecc-contact-links>a{font-size:16px}
+.ecc-contact-links small{font-size:12px}
+.ecc-footer-grid>div>p{font-size:15px}
+.ecc-footer h3{font-size:12px}
+.ecc-footer-grid>div:not(:first-child)>a{font-size:15px}
+.ecc-footer-bottom{font-size:14px}
+@media(max-width:700px){
+.ecc-topbar{font-size:12px}
+.ecc-signin{font-size:12px}
+.ecc-nav-cta{font-size:14px}
+.ecc-eyebrow{font-size:12px}
+.ecc-hero-description{font-size:16px}
+.ecc-hero-actions .ecc-button{font-size:15px}
+.ecc-hero-actions .ecc-text-link{font-size:14px}
+.ecc-small-note{font-size:14px}
+.ecc-hero-bottom{font-size:12px}
+.ecc-photo-card p{font-size:12px}
+.ecc-assurance p{font-size:14px}
+.ecc-section-heading>p{font-size:15px}
+.ecc-service-card .ecc-eyebrow{font-size:12px}
+.ecc-service-description{font-size:14px}
+.ecc-service-card li a{font-size:14px}
+.ecc-approach-grid>div>p:not(.ecc-eyebrow){font-size:15px}
+.ecc-contact-links>a{font-size:15px}
+}
+.ecc-nav-links{font-size:15px}
+.ecc-quote-intro p{font-size:15px}
+.ecc-quote-choices button{font-size:14px}
+.ecc-quote-action .ecc-button{font-size:15px}
+.ecc-quote-action small{font-size:14px}
+.ecc-section-heading>p{font-size:15px}
+.ecc-service-card .ecc-eyebrow{font-size:12px}
+.ecc-service-description{font-size:15px}
+.ecc-service-link{font-size:14px}
+.ecc-approach-grid>div>p:not(.ecc-eyebrow){font-size:15px}
+.ecc-approach li h3{font-size:15px}
+.ecc-approach li p{font-size:14px}
+.ecc-cookie-notice p{font-size:15px}
+.ecc-cookie-notice a{font-size:15px}
+@media(max-width:700px){
+.ecc-photo figcaption{font-size:12px}
+}
+.ecc-image-credit{font-size:14px}
+.ecc-muted{font-size:15px}
+.ecc-zip-form small{font-size:14px}
+.ecc-intake-form label{font-size:16px}
+.ecc-intake-form small,.ecc-form-privacy{font-size:14px}
+.ecc-offer-tab{font-size:15px}
+.ecc-cookie-settings{font-size:14px}
+.ecc-consent-choices{font-size:15px}
+@media(max-width:800px){
+.ecc-offer-tab{font-size:14px}
+}
+@media(max-width:520px){
+}
+@media(max-width:700px){
+.ecc-topbar a{font-size:14px}
+}
+
+/* Readable body copy */
+.ecc-hero-description{font-size:18px;line-height:1.7;max-width:460px}
+.ecc-service-description,.ecc-section-heading>p,.ecc-approach li p,.ecc-faq details>p,.ecc-areas p{font-size:16px;line-height:1.7}
+.ecc-eyebrow{font-size:12px;letter-spacing:.14em;color:var(--label)}
+.ecc-approach .ecc-eyebrow{color:#e8c3b0}
+.ecc-service-card .ecc-eyebrow{font-size:12px;color:var(--label)}
+.ecc-service-card h3{font-size:24px;min-height:0}
+.ecc-service-description{min-height:0}
+.ecc-faq summary{font-size:17px;min-height:44px}
+.ecc-contact-links small,.ecc-footer h3{font-size:12px}
+.ecc-photo figcaption{font-size:12px}
+
+/* Conversion: one consistent CTA colour, flat hover (no jumps) */
+.ecc-button{background:var(--accent);color:#fff;border-radius:var(--radius);min-height:48px;gap:12px;font-weight:600;transition:background var(--ease)}
+.ecc-button:hover{background:var(--accent-2);transform:none}
+.ecc-button-light{background:#f1f4ea;color:var(--forest)}
+.ecc-button-light:hover{background:#fff}
+.ecc-nav-cta{min-height:44px}
+.ecc-service-card{border-radius:var(--radius);transition:border-color var(--ease)}
+.ecc-service-card:hover{transform:none;border-color:var(--forest-2)}
+.ecc-service-link,.ecc-text-link{min-height:44px;display:inline-flex;align-items:center}
+.ecc-assurance p{font-size:15px}
+.ecc-assurance svg{color:var(--label)}
+.ecc-home a,.ecc-home summary,.ecc-home button{cursor:pointer}
+
+@media(max-width:700px){
+  .ecc-hero-description{font-size:17px}
+  .ecc-home h2{font-size:34px}
+  .ecc-service-card h3{font-size:22px}
+  .ecc-nav-cta{min-height:44px;padding:10px 14px}
+  .ecc-eyebrow,.ecc-service-card .ecc-eyebrow{font-size:12px}
+  .ecc-assurance p{font-size:14px}
+}
+@media (prefers-reduced-motion:reduce){.ecc-home *{transition:none!important}}
+
+
+/* No horizontal scroll: hero image bleeds via 100vw, which includes the scrollbar */
+.ecc-home{overflow-x:clip}
+/* Touch targets: quote CTA must clear 44px */
+.ecc-quote-action .ecc-button{min-height:48px}
+/* Mobile top bar: sentence case; one line from 390px, balanced 2-line wrap below (no truncation) */
+@media(max-width:700px){.ecc-topbar .ecc-wrap{gap:12px}.ecc-topbar .ecc-wrap>span{max-width:none;text-transform:none;letter-spacing:0;font-size:13px;text-wrap:balance}.ecc-topbar a{font-size:13px;white-space:nowrap;flex-shrink:0}}
