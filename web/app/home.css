@@ -197,5 +197,5 @@
 .ecc-home{overflow-x:clip}
 /* Touch targets: quote CTA must clear 44px */
 .ecc-quote-action .ecc-button{min-height:48px}
-/* Mobile top bar: keep to one line at 375px */
-@media(max-width:700px){.ecc-topbar .ecc-wrap>span{max-width:none;letter-spacing:.02em;font-size:12px}.ecc-topbar a{font-size:13px;white-space:nowrap}}
+/* Mobile top bar: sentence case; one line from 390px, balanced 2-line wrap below (no truncation) */
+@media(max-width:700px){.ecc-topbar .ecc-wrap{gap:12px}.ecc-topbar .ecc-wrap>span{max-width:none;text-transform:none;letter-spacing:0;font-size:13px;text-wrap:balance}.ecc-topbar a{font-size:13px;white-space:nowrap;flex-shrink:0}}
