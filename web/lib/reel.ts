@@ -1,14 +1,14 @@
 // Footage: free stock clips (Pexels License and Mixkit Stock Video Free License), color-graded to the
 // site palette and self-hosted in /public/video. These are stock clips, not Express Cleaning Consult jobs.
-// Sources: Pexels 6195520, 6195513, 6195531, 6197070, 6196259, 6160411, 6195512, 6195522, 6195139; Mixkit 45041, 45040.
+// Faceless by design (brand rule: no faces in marketing). Sources: Pexels 6195531, 6160411, 6195522, 6195139; Mixkit 45041, 45040.
 const v = (name: string) => ({ src: `/video/${name}.mp4`, poster: `/video/${name}.jpg` });
 
 export type Clip = { key: string; caption: string; alt: string; wide: ReturnType<typeof v>; tall: ReturnType<typeof v> };
 
 export const heroClips: Clip[] = [
-  { key: 'team', caption: 'Whole-home deep clean', alt: 'A uniformed cleaning crew vacuuming, mopping and wiping a modern kitchen and dining area', wide: v('hero-team-l'), tall: v('hero-team-p') },
-  { key: 'floor', caption: 'Floor care', alt: 'Professional cleaner mopping and vacuuming floors', wide: v('hero-floor-l'), tall: v('hero-floor-p') },
-  { key: 'steam', caption: 'Upholstery & detail work', alt: 'Steam cleaning upholstery and wiping glass surfaces', wide: v('hero-steam-l'), tall: v('hero-steam-p') },
+  { key: 'floor', caption: 'Floor care', alt: 'Professional cleaner in uniform mopping a modern dining area floor', wide: v('hero-floor-l'), tall: v('hero-floor-p') },
+  { key: 'steam', caption: 'Upholstery steam cleaning', alt: 'Steam cleaning a fabric sofa', wide: v('hero-steam-l'), tall: v('hero-steam-p') },
+  { key: 'detail', caption: 'Deep extraction, every fiber', alt: 'Close-up of a steam extraction tool lifting dirt from fabric', wide: v('hero-detail-l'), tall: v('hero-detail-p') },
   { key: 'pressure', caption: 'Exterior pressure washing', alt: 'Pressure washing an outdoor walkway', wide: v('hero-pressure-l'), tall: v('hero-pressure-p') },
 ];
 
