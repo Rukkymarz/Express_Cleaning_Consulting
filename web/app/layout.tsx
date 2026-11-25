@@ -24,8 +24,8 @@ export const metadata: Metadata = {
     googleBot: { index: true, follow: true, 'max-image-preview': 'large', 'max-snippet': -1, 'max-video-preview': -1 },
   },
   verification: { google: 'WR9Y9dsqLXeL2A4_A6sAe9vHV6-qHtWJet2KVezVBys' },
-  openGraph: { type: 'website', locale: 'en_US', siteName: 'Express Cleaning Consult', title, description, images: [{ url: '/gallery/bedroom-after.webp', alt: 'Express Cleaning Consult real project result' }] },
-  twitter: { card: 'summary_large_image', title, description, images: [{ url: '/gallery/bedroom-after.webp', alt: 'Express Cleaning Consult real project result' }] },
+  openGraph: { type: 'website', locale: 'en_US', siteName: 'Express Cleaning Consult', title, description, images: [{ url: '/og-cinematic.jpg', width: 1200, height: 630, alt: 'Express Cleaning Consult: Spotless, in motion' }] },
+  twitter: { card: 'summary_large_image', title, description, images: [{ url: '/og-cinematic.jpg', width: 1200, height: 630, alt: 'Express Cleaning Consult: Spotless, in motion' }] },
 };
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return <html lang="en"><body className="min-h-screen antialiased">{children}<TrackingConsent /></body></html>;

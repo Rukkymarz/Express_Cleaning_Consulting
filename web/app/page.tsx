@@ -1,42 +1,134 @@
-import './home.css';
-import Image from 'next/image';
+import './cinema.css';
 import type { Metadata } from 'next';
-import { ArrowUpRight, ArrowRight, Sparkles, House, Building2, KeyRound, Droplets, Check, Phone, Mail } from 'lucide-react';
 import WebsiteTools from '@/components/WebsiteTools';
-import QuoteChoice from '@/components/QuoteChoice';
-import BeforeAfterGallery from '@/components/BeforeAfterGallery';
-import ReviewsSection from '@/components/ReviewsSection';
-import { publishedProjectPairs } from '@/lib/gallery';
-import {serviceGuides} from '@/lib/services';
-import { faqs, confirmedMarkets } from '@/lib/launch';
-import Guarantee from '@/components/Guarantee';
-import ZipAvailability from '@/components/ZipAvailability';
 import WelcomeOffer from '@/components/WelcomeOffer';
+import BeforeAfterGallery from '@/components/BeforeAfterGallery';
+import HeroReel from '@/components/HeroReel';
+import ServiceIndex from '@/components/ServiceIndex';
+import CinemaEffects from '@/components/CinemaEffects';
+import { publishedProjectPairs } from '@/lib/gallery';
+import { serviceGuides } from '@/lib/services';
+import { faqs, guarantee, contact } from '@/lib/launch';
 import { instagramUrl, facebookUrl } from '@/lib/social';
+import { media } from '@/lib/reel';
 
-export const metadata: Metadata = { alternates: { canonical: '/' }, openGraph: { type: 'website', url: '/', title: 'Nationwide Cleaning Services | Express Cleaning Consult', description: 'Free quotes for residential, office and turnover cleaning nationwide. Enter your ZIP code; local availability, scope and price are confirmed before booking.', images: [{url:'/gallery/bedroom-after.webp',alt:'Express Cleaning Consult real project result'}], siteName: 'Express Cleaning Consult' } };
-const structuredData = { '@context': 'https://schema.org', '@graph': [{ '@type': 'Organization', '@id': 'https://www.expresscleaningconsult.com/#organization', name: 'Express Cleaning Consult', url: 'https://www.expresscleaningconsult.com/', telephone: '+12819727712', email: 'support@expresscleaningconsult.com', areaServed: { '@type': 'Country', name: 'United States' }, contactPoint: [{ '@type': 'ContactPoint', telephone: '+12819727712', email: 'support@expresscleaningconsult.com', contactType: 'customer support', areaServed: 'US', availableLanguage: 'English' }], sameAs: [instagramUrl, facebookUrl], hasOfferCatalog: { '@type': 'OfferCatalog', name: 'Cleaning and property services', itemListElement: serviceGuides.map(s=>({ '@type':'Offer', itemOffered:{ '@type':'Service', name:s.name, url:`https://www.expresscleaningconsult.com/services/${s.slug}` } })) } }, { '@type': 'WebSite', '@id': 'https://www.expresscleaningconsult.com/#website', name: 'Express Cleaning Consult', url: 'https://www.expresscleaningconsult.com/', publisher: { '@id': 'https://www.expresscleaningconsult.com/#organization' } }, { '@type':'FAQPage', '@id':'https://www.expresscleaningconsult.com/#faq', mainEntity: faqs.map(([question,answer])=>({ '@type':'Question', name:question, acceptedAnswer:{ '@type':'Answer', text:answer } })) }] };
-const groups = [
-  { number:'01', title:'Residential cleaning', label:'HOME', text:'Routine and deep cleaning for a healthier home.', code:'RES-STD', photo:'bedroom', photoAlt:'Organized bedroom following a company-supplied cleaning project' },
-  { number:'02', title:'Offices and janitorial', label:'BUSINESS', text:'Clean, organized work environments.', code:'COMM-OFF', photo:'kitchen', photoAlt:'Commercial kitchen equipment after cleaning' },
-  { number:'03', title:'Move-in / move-out', label:'NEW START', text:'Detailed cleaning for a fresh start.', code:'MOVE-IN', photo:'hall', photoAlt:'A cleared hallway from an Express Cleaning Consult project' },
-  { number:'04', title:'Airbnb and apartment turnover', label:'PROPERTY', text:'Get your space guest-ready between stays.', code:'AIRBNB', photo:'living', photoAlt:'A cleared living room from an Express Cleaning Consult project' },
-  { number:'05', title:'Post-construction cleaning', label:'PROJECTS', text:'Remove dust and debris after your project.', code:'POST-CON', photo:'hall', photoAlt:'Cleared interior hallway from a supplied project' },
-  { number:'06', title:'Pressure washing and junk removal', label:'OUTDOORS', text:'Refresh exterior surfaces and clear unwanted items.', code:'PRESSURE', photo:'pressure', photoAlt:'Exterior steps after cleaning' },
+const site = 'https://www.expresscleaningconsult.com';
+const description = 'Free online quotes for house, deep, office, move-out, Airbnb turnover and post-construction cleaning nationwide, done by vetted local partner crews.';
+
+export const metadata: Metadata = {
+  title: { absolute: 'Cleaning Services Nationwide | Express Cleaning Consult' },
+  description,
+  keywords: ['free cleaning quote', 'house cleaning services', 'deep cleaning', 'office janitorial cleaning', 'Airbnb turnover cleaning', 'move-in move-out cleaning', 'post construction cleaning', 'pressure washing services', 'junk removal services', 'nationwide cleaning services', 'apartment turnover cleaning', 'local cleaning company'],
+  alternates: { canonical: '/' },
+  openGraph: { type: 'website', url: '/', title: 'Spotless, in motion | Express Cleaning Consult', description, images: [{ url: '/og-cinematic.jpg', width: 1200, height: 630, alt: 'Express Cleaning Consult: Spotless, in motion' }], siteName: 'Express Cleaning Consult' },
+};
+
+const structuredData = { '@context': 'https://schema.org', '@graph': [
+  { '@type': 'Organization', '@id': `${site}/#organization`, name: 'Express Cleaning Consult', url: `${site}/`, logo: `${site}/icon`, telephone: contact.phone, email: contact.email, areaServed: { '@type': 'Country', name: 'United States' },
+    contactPoint: [{ '@type': 'ContactPoint', telephone: contact.phone, email: contact.email, contactType: 'customer support', areaServed: 'US', availableLanguage: 'English' }],
+    sameAs: [instagramUrl, facebookUrl],
+    hasOfferCatalog: { '@type': 'OfferCatalog', name: 'Cleaning and property services', itemListElement: serviceGuides.map(s => ({ '@type': 'Offer', itemOffered: { '@type': 'Service', name: s.name, url: `${site}/services/${s.slug}`, provider: { '@id': `${site}/#organization` }, areaServed: 'US' } })) } },
+  { '@type': 'WebSite', '@id': `${site}/#website`, name: 'Express Cleaning Consult', url: `${site}/`, publisher: { '@id': `${site}/#organization` } },
+  { '@type': 'FAQPage', '@id': `${site}/#faq`, mainEntity: faqs.map(([q, a]) => ({ '@type': 'Question', name: q, acceptedAnswer: { '@type': 'Answer', text: a } })) },
+] };
+
+const marquee = ['House cleaning', 'Deep cleaning', 'Office & janitorial', 'Move-in / move-out', 'Airbnb turnover', 'Post-construction', 'Pressure washing', 'Junk removal'];
+const steps = [
+  ['Tell us what you need', 'Choose a service and enter your ZIP code, then leave your name and number. It takes about a minute.'],
+  ['Get a clear quote', 'We call to walk through the details, confirm local crew availability and prepare your free quote.'],
+  ['Book with confidence', 'Approve the scope and price first. Only then do we schedule your clean with a vetted local partner.'],
 ];
-const steps = [['01','Tell us what you need.','Choose your service and ZIP code, then leave your name and phone number.'],['02','Get a clear quote.','We call to discuss the details, check local availability and prepare your free quote.'],['03','Make it official.','Review your quote and confirm with our team before we schedule your service.']];
-const questions = faqs;
-function Brand(){return <a href="/" className="ecc-brand" aria-label="Express Cleaning Consult home"><span className="ecc-brand-mark"><Sparkles size={25} strokeWidth={1.5} aria-hidden="true" /></span><span>EXPRESS<span className="ecc-brand-sub">CLEANING CONSULT</span></span></a>;}
-export default function Home(){return <div className="ecc-home">
-  <div className="ecc-topbar"><div className="ecc-wrap"><span>Nationwide requests. Local care.</span><a href="tel:+12819727712"><Phone size={13} aria-hidden="true" /> (281) 972-7712</a></div></div>
-  <header className="ecc-header"><div className="ecc-wrap ecc-nav"><Brand /><nav aria-label="Main navigation" className="ecc-nav-links"><a className="ecc-desktop-link" href="#services">Our services</a><a className="ecc-desktop-link" href="#how">Our approach</a><a className="ecc-desktop-link" href="#areas">Areas we serve</a><a className="ecc-desktop-link" href="/contact">Contact</a><a href="/book" className="ecc-button ecc-nav-cta"><span className="ecc-quote-long">Request a quote</span><span className="ecc-quote-short">Free quote</span><ArrowUpRight size={17} aria-hidden="true" /></a></nav></div><div className="ecc-header-guarantee"><Guarantee/></div></header>
-  <main><script type="application/ld+json" dangerouslySetInnerHTML={{__html:JSON.stringify(structuredData).replace(/</g,'\\u003c')}} />
-    <section className="ecc-hero"><div className="ecc-wrap ecc-hero-grid"><div className="ecc-hero-copy"><p className="ecc-eyebrow"><span /> HOME · BUSINESS · PROPERTY</p><h1>Clean spaces.<br /><em>Clear standards.</em></h1><p className="ecc-hero-description">Residential and commercial cleaning requests nationwide. Share your ZIP code for a free quote; we confirm local partner availability before booking.</p><QuoteChoice /></div><div className="ecc-hero-visual"><figure className="ecc-photo"><Image src="/gallery/bedroom-after.webp" alt="A bright, organized bedroom following a real Express Cleaning Consult project" fill priority sizes="(min-width:1000px) 48vw, 94vw" className="ecc-photo-image" /><figcaption>Real project result · Express Cleaning Consult</figcaption></figure></div></div></section>
-    <div className="ecc-assurance"><div className="ecc-wrap">{['Free, personalized quote','Scope and price agreed first','Residential & commercial services'].map(item=><p key={item}><Check size={17} aria-hidden="true" />{item}</p>)}</div></div>
-    <section id="services" className="ecc-section ecc-wrap"><div className="ecc-section-heading"><div><p className="ecc-eyebrow">OUR SERVICES</p><h2>Comprehensive cleaning<br /><em>for every space.</em></h2></div><p>From everyday cleaning to specialized projects, we help keep your spaces ready for what’s next.</p></div><div className="ecc-services-grid">{groups.map(({number,title,label,text,code,photo,photoAlt})=><article className="ecc-service-card" key={number}><div className={`ecc-service-photo ecc-photo-${photo}`} role="img" aria-label={photoAlt}><span>{number}</span></div><p className="ecc-eyebrow">{label}</p><h3><a href={`/services/${({'RES-STD':'house-cleaning','COMM-OFF':'office-cleaning','MOVE-IN':'move-out-cleaning','AIRBNB':'airbnb-turnover-cleaning','POST-CON':'post-construction-cleaning','PRESSURE':'pressure-washing'} as Record<string,string>)[code]}`}>{title}</a></h3><p className="ecc-service-description">{text}</p><a className="ecc-service-link" href={`/book?service=${encodeURIComponent(code)}`}>Request a quote <ArrowUpRight size={16} aria-hidden="true" /></a><Guarantee/></article>)}</div><p><a className="ecc-text-link" href="/services">Explore all cleaning services →</a></p><p className="ecc-image-credit">Project images supplied by Express Cleaning Consult. Cleaning scope is agreed for each property.</p></section>
-    <section id="areas" className="ecc-section ecc-wrap ecc-areas"><div><p className="ecc-eyebrow">AREAS WE SERVE</p><h2>Cleaning services<br/><em>nationwide.</em></h2><p>We partner with trusted local cleaners in cities across the U.S. Enter your ZIP code to check availability in your area.</p><p className="ecc-muted">Our team confirms local partner coverage before a booking is accepted.</p>{confirmedMarkets.length>0&&<div className="ecc-city-links">{confirmedMarkets.map(m=><a key={m.slug} href={`/${m.slug}/house-cleaning`}>{m.city}, {m.region} →</a>)}</div>}</div><ZipAvailability/></section><section className="ecc-section ecc-wrap ecc-business-links"><article><span className="ecc-eyebrow">FOR PROPERTY TEAMS</span><h2>One contact.<br/><em>Every turnover.</em></h2><p>Unit resets, Airbnb turnovers, rush requests and overflow coverage.</p><a href="/property-managers" className="ecc-button">Request vendor setup →</a></article><article><span className="ecc-eyebrow">GROW WITH US</span><h2>Local expertise.<br/><em>More opportunity.</em></h2><p>Join our partner network or connect a client with a free cleaning quote.</p><a href="/partner-cleaners" className="ecc-text-link">Become a partner cleaner →</a><a href="/refer-a-client" className="ecc-text-link">Refer a client →</a></article></section><section id="how" className="ecc-approach"><div className="ecc-wrap ecc-approach-grid"><div><p className="ecc-eyebrow">OUR APPROACH</p><h2>A simple, transparent<br /><em>process.</em></h2><p>Good service starts with a clear conversation. You tell us what matters. We review the details, then confirm a plan with you.</p><a href="/book" className="ecc-button ecc-button-light">Let’s get started <ArrowUpRight size={20} aria-hidden="true" /></a></div><ol>{steps.map(([number,title,text])=><li key={number}><span>{number}</span><div><h3>{title}</h3><p>{text}</p></div></li>)}</ol></div></section>
-    {publishedProjectPairs().length>0&&<BeforeAfterGallery />}<ReviewsSection />
-    <section className="ecc-section ecc-wrap ecc-faq"><div><p className="ecc-eyebrow">BEFORE WE GET STARTED</p><h2>A few things<br /><em>you might ask.</em></h2><a href="mailto:support@expresscleaningconsult.com" className="ecc-text-link">Have another question? <ArrowUpRight size={18} aria-hidden="true" /></a></div><div>{questions.map(([question,answer])=><details key={question}><summary>{question}<span aria-hidden="true">+</span></summary><p>{answer}</p></details>)}</div></section>
-    <section id="contact" className="ecc-contact"><div className="ecc-wrap"><div className="ecc-contact-heading"><div><p className="ecc-eyebrow">MAKE ROOM FOR A FRESH START</p><h2>Tell us about <em>your space.</em></h2><p>Your next clean starts with a simple conversation.</p></div><div><a href="/book" className="ecc-button">Get a free quote <ArrowUpRight size={20} aria-hidden="true" /></a><Guarantee/></div></div><div className="ecc-contact-links"><a href="mailto:support@expresscleaningconsult.com"><Mail size={20} aria-hidden="true" /><span><small>EMAIL OUR TEAM</small>support@expresscleaningconsult.com</span><ArrowUpRight size={18} aria-hidden="true" /></a><a href="tel:+12819727712"><Phone size={20} aria-hidden="true" /><span><small>GIVE US A CALL</small>(281) 972-7712</span><ArrowUpRight size={18} aria-hidden="true" /></a></div><p><a className="ecc-text-link" href="/contact">View contact and support options →</a></p></div></section>
-  </main><footer className="ecc-footer"><div className="ecc-wrap"><div className="ecc-footer-grid"><div><Brand /><p>Thoughtful cleaning for the places<br />that matter to you.</p></div><div><h3>EXPLORE</h3><a href="/services">Our services</a><a href="#how">Our approach</a><a href="/book">Request a quote</a><a href="/contact">Contact</a><a href="/property-managers">Property managers & hosts</a><a href="/partner-cleaners">Partner cleaners</a><a href="/refer-a-client">Refer a client</a></div><div><h3>STAY CONNECTED</h3><a href="tel:+12819727712">(281) 972-7712</a><a href="mailto:support@expresscleaningconsult.com">support@expresscleaningconsult.com</a><a href={instagramUrl} target="_blank" rel="noopener noreferrer">Instagram <ArrowUpRight size={14} aria-hidden="true" /></a><a href={facebookUrl} target="_blank" rel="noopener noreferrer">Facebook <ArrowUpRight size={14} aria-hidden="true" /></a><a href="/login">Admin sign in <ArrowUpRight size={14} aria-hidden="true" /></a></div></div><div className="ecc-footer-bottom"><span>© {new Date().getFullYear()} Express Cleaning Consult</span><span>Service is confirmed based on local crew availability. · <a href="/privacy">Privacy Policy</a> · <a href="/terms">Terms</a></span></div></div></footer><WebsiteTools /><WelcomeOffer />
-</div>;}
+const promises = [
+  ['Free quote', 'Every job is priced for your exact space. No card required.'],
+  ['Scope agreed first', 'You approve what gets cleaned and the price before booking.'],
+  ['Make-it-right promise', guarantee],
+];
+
+function Brand() {
+  return <a href="/" className="cx-brand" aria-label="Express Cleaning Consult home"><b>EXPRESS</b><small>CLEANING CONSULT</small><i /><i /></a>;
+}
+function bg(m: { src: string; poster: string }) {
+  return <video data-lazy muted loop playsInline preload="none" aria-hidden="true" poster={m.poster} src={m.src} />;
+}
+
+export default function Home() {
+  return <div className="cx">
+    <CinemaEffects />
+    <header className="cx-header"><div className="cx-wrap cx-nav">
+      <Brand />
+      <nav aria-label="Main navigation">
+        <a href="#services">Services</a><a href="#process">How it works</a><a href="#teams">Property teams</a><a href="#faq">FAQ</a>
+        <a href={`tel:${contact.phone}`} className="cx-tel">{contact.displayPhone}</a>
+        <a href="/book" className="cx-btn" data-mag>Free quote <span aria-hidden="true">↗</span></a>
+      </nav>
+    </div></header>
+
+    <main>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, '\\u003c') }} />
+      <HeroReel />
+
+      <div className="cx-marquee" aria-hidden="true"><div>{[...marquee, ...marquee].map((w, i) => <span key={i}>{w}</span>)}</div></div>
+
+      <section id="services" className="cx-section"><div className="cx-wrap">
+        <div className="cx-svc-head cx-reveal">
+          <div><p className="cx-kicker">What we clean</p><h2>Every space,<br /><em>handled.</em></h2></div>
+          <p>From weekly home care to post-construction dust, each job is quoted for your exact space, then matched to a trusted local crew.</p>
+        </div>
+        <ServiceIndex />
+        <p className="cx-more"><a href="/services">Explore all cleaning services →</a></p>
+      </div></section>
+
+      <section id="process" className="cx-section cx-process"><div className="cx-wrap cx-proc">
+        <div className="cx-sticky cx-reveal">
+          <p className="cx-kicker">How it works</p><h2>Three steps.<br /><em>No surprises.</em></h2>
+          <p>Good cleaning starts with a clear conversation. You tell us what matters, we confirm the plan, then the crew shows up ready.</p>
+          <a href="/book" className="cx-btn" data-mag>Start my quote</a>
+        </div>
+        <ol className="cx-steps">{steps.map(([h, p], i) => <li key={h} className="cx-reveal"><span className="cx-k">{['i', 'ii', 'iii'][i]}</span><div><h3>{h}</h3><p>{p}</p></div></li>)}</ol>
+      </div></section>
+
+      <section className="cx-section cx-tight"><div className="cx-wrap cx-trust cx-reveal">
+        {promises.map(([b, p]) => <div key={b}><b>{b}</b><p>{p}</p></div>)}
+      </div></section>
+
+      {publishedProjectPairs().length > 0 && <div className="ecc-home"><BeforeAfterGallery /></div>}
+
+      <section id="teams" className="cx-section"><div className="cx-wrap">
+        <div className="cx-reveal cx-gap"><p className="cx-kicker">Built for scale</p><h2>One contact.<br /><em>Every turnover.</em></h2></div>
+        <div className="cx-aud">
+          <article className="cx-card cx-reveal">{bg(media.property)}
+            <h3>Property managers &amp; hosts</h3><p>Unit resets, Airbnb turnovers, rush requests and overflow coverage under one vendor relationship.</p>
+            <div className="cx-links"><a className="cx-btn" href="/property-managers">Request vendor setup</a></div></article>
+          <article className="cx-card cx-reveal">{bg(media.partner)}
+            <h3>Partner cleaners</h3><p>Independent cleaners and crews: join our network and receive quoted, scoped jobs in your area.</p>
+            <div className="cx-links"><a className="cx-btn" href="/partner-cleaners">Become a partner</a><a className="cx-btn ghost" href="/refer-a-client">Refer a client</a></div></article>
+        </div>
+      </div></section>
+
+      <section id="faq" className="cx-section cx-top0"><div className="cx-wrap cx-faq">
+        <div className="cx-reveal"><p className="cx-kicker">Before you book</p><h2>Questions,<br /><em>answered.</em></h2>
+          <p className="cx-muted"><a href={`mailto:${contact.email}`}>Have another question? →</a></p></div>
+        <div>{faqs.map(([q, a]) => <details key={q} className="cx-reveal"><summary>{q}<span aria-hidden="true">+</span></summary><p>{a}</p></details>)}</div>
+      </div></section>
+
+      <section id="contact" className="cx-contact">{bg(media.contact)}<div className="cx-wrap cx-reveal">
+        <p className="cx-kicker cx-center">Make room for a fresh start</p>
+        <h2>Let’s make it<br /><em>spotless.</em></h2>
+        <div className="cx-row"><a className="cx-btn" data-mag href="/book">Get a free quote</a><a className="cx-btn ghost" href={`tel:${contact.phone}`}>Call {contact.displayPhone}</a></div>
+        <p className="cx-muted">{contact.email} · {contact.displayPhone}</p>
+      </div></section>
+    </main>
+
+    <footer className="cx-footer"><div className="cx-wrap">
+      <div className="cx-fgrid">
+        <div><Brand /><p className="cx-muted">Thoughtful cleaning for the places that matter to you. Nationwide requests, local crews.</p></div>
+        <div className="cx-col"><h4>Explore</h4><a href="/services">Services</a><a href="#process">How it works</a><a href="/book">Request a quote</a><a href="/property-managers">Property managers &amp; hosts</a><a href="/partner-cleaners">Partner cleaners</a><a href="/refer-a-client">Refer a client</a></div>
+        <div className="cx-col"><h4>Stay connected</h4><a href={`tel:${contact.phone}`}>{contact.displayPhone}</a><a href={`mailto:${contact.email}`}>{contact.email}</a><a href={instagramUrl} target="_blank" rel="noopener noreferrer">Instagram ↗</a><a href={facebookUrl} target="_blank" rel="noopener noreferrer">Facebook ↗</a><a href="/login">Admin sign in</a></div>
+      </div>
+      <div className="cx-giant" aria-hidden="true">Express Cleaning</div>
+      <div className="cx-fbot"><span>© {new Date().getFullYear()} Express Cleaning Consult</span><span>Service is confirmed based on local crew availability · <a href="/privacy">Privacy Policy</a> · <a href="/terms">Terms</a></span></div>
+      <p className="cx-credit">Background footage: free stock clips (Pexels, Mixkit), color-graded and shown for illustration. Project photos supplied by Express Cleaning Consult.</p>
+    </div></footer>
+    <div className="ecc-home cx-legacy-tools"><WebsiteTools /><WelcomeOffer /></div>
+  </div>;
+}
