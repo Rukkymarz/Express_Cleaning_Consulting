@@ -5,10 +5,23 @@ import { useState } from 'react';
 import { instagramUrl } from '@/lib/social';
 import { publishedProjectPairs } from '@/lib/gallery';
 
-export default function BeforeAfterGallery({ serviceCode }: { serviceCode?: string }) {
+export default function BeforeAfterGallery({ serviceCode, theme }: { serviceCode?: string; theme?: 'cinema' }) {
   const matches = publishedProjectPairs(serviceCode);
   const [selected, setSelected] = useState(0);
   const active = matches[Math.min(selected, matches.length - 1)];
+
+  if (theme === 'cinema') {
+    if (!active) return null;
+    return <section id="results" aria-labelledby="results-title" className="cx-section cx-ba"><div className="cx-wrap">
+      <div className="cx-ba-head cx-reveal"><div><p className="cx-kicker">Our work</p><h2 id="results-title">Before &amp; after,<br /><em>side by side.</em></h2></div>
+        <p>Real project photos supplied by Express Cleaning Consult. Results vary with the condition and scope of each space.</p></div>
+      {matches.length > 1 && <div aria-label="Cleaning projects" className="cx-ba-tabs">{matches.map((result, index) => <button key={result.id} type="button" aria-pressed={selected === index} onClick={() => setSelected(index)}>{result.title}</button>)}</div>}
+      <div className="cx-ba-grid">{(['before', 'after'] as const).map(stage => { const image = active[stage]; return <figure key={`${active.id}-${stage}`}>
+        <div className="cx-ba-img"><Image src={image.src} alt={image.alt} fill sizes="(min-width: 760px) 46vw, 92vw" className="cx-ba-photo" /><span className={stage === 'after' ? 'after' : ''}>{stage === 'after' ? 'After' : 'Before'}</span></div>
+        <figcaption>{image.caption}</figcaption></figure>; })}</div>
+      <p className="cx-ba-sum">{active.summary}</p>
+    </div></section>;
+  }
 
   return <section id="results" aria-labelledby="results-title" className="bg-white px-5 py-16 md:px-8">
     <div className="mx-auto max-w-7xl">

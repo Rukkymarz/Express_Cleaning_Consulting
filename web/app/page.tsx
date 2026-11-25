@@ -91,7 +91,7 @@ export default function Home() {
         {promises.map(([b, p]) => <div key={b}><b>{b}</b><p>{p}</p></div>)}
       </div></section>
 
-      {publishedProjectPairs().length > 0 && <div className="ecc-home"><BeforeAfterGallery /></div>}
+      {publishedProjectPairs().length > 0 && <BeforeAfterGallery theme="cinema" />}
 
       <section id="teams" className="cx-section"><div className="cx-wrap">
         <div className="cx-reveal cx-gap"><p className="cx-kicker">Built for scale</p><h2>One contact.<br /><em>Every turnover.</em></h2></div>
