@@ -11,7 +11,7 @@ export default function CinemaEffects() {
     const hover = matchMedia('(hover: hover)').matches;
 
     const header = root.querySelector('.cx-header');
-    const onScroll = () => header?.classList.toggle('solid', scrollY > 60);
+    const onScroll = () => { header?.classList.toggle('solid', scrollY > 60); root.classList.toggle('past-hero', scrollY > innerHeight * 0.6); };
     addEventListener('scroll', onScroll, { passive: true }); onScroll();
 
     const reveal = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); reveal.unobserve(e.target); } }), { threshold: 0.15 });

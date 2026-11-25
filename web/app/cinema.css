@@ -123,3 +123,31 @@
 .cx-legacy-tools{background:none}
 .cx .ecc-offer-tab{background:var(--rust);box-shadow:0 8px 30px rgba(0,0,0,.4)}
 @media(prefers-reduced-motion:reduce){.cx *,.cx *::before,.cx *::after{animation:none!important;transition:none!important}.cx-line>span{transform:none}.cx-reveal{opacity:1;transform:none}}
+/* ---- Overlays restyled to the cinematic look (offer dialog, offer tab, cookie notice) ---- */
+.cx .ecc-offer-tab{background:var(--rust);color:var(--bone);font:500 14px "Inter Tight",sans-serif;letter-spacing:0;padding:14px 22px;border-radius:99px;box-shadow:0 10px 34px rgba(0,0,0,.45);transition:opacity .4s,transform .4s,background .3s}
+.cx .ecc-offer-tab:hover{background:#cf6237}
+.cx:not(.past-hero) .ecc-offer-tab{opacity:0;transform:translateY(12px);pointer-events:none}
+.cx .ecc-offer-dialog{background:#151613;color:var(--bone);border:1px solid var(--line);border-radius:10px;padding:44px 40px;box-shadow:0 30px 120px rgba(0,0,0,.6);font-family:"Inter Tight",sans-serif}
+.cx .ecc-offer-dialog::backdrop{background:rgba(13,14,12,.72);backdrop-filter:blur(6px)}
+.cx .ecc-offer-dialog .ecc-eyebrow{color:var(--mute);font:500 12px "Inter Tight",sans-serif;letter-spacing:.08em;display:flex;align-items:center;gap:12px}
+.cx .ecc-offer-dialog .ecc-eyebrow::before{content:"";width:28px;height:2px;background:var(--rust)}
+.cx .ecc-offer-dialog h2{font:300 clamp(38px,5vw,52px)/.98 "Inter Tight",sans-serif;letter-spacing:-.045em;margin:18px 0;color:var(--bone)}
+.cx .ecc-offer-dialog h2 em{font-family:"Instrument Serif",serif;font-style:italic;color:var(--rust);letter-spacing:-.01em}
+.cx .ecc-offer-dialog>p,.cx .ecc-offer-dialog .ecc-form-privacy,.cx .ecc-offer-dialog .ecc-check{color:#cfc9bf}
+.cx .ecc-offer-dialog a{color:var(--bone);text-decoration:underline}
+.cx .ecc-offer-dialog label{color:var(--bone)}
+.cx .ecc-offer-dialog input:not([type=checkbox]){background:rgba(236,231,223,.06);border:1px solid rgba(236,231,223,.25);color:var(--bone);border-radius:99px;height:50px;padding:0 20px;font:16px "Inter Tight",sans-serif}
+.cx .ecc-offer-dialog input:not([type=checkbox]):focus{outline:2px solid var(--rust);outline-offset:2px}
+.cx .ecc-offer-dialog input[type=checkbox]{accent-color:var(--rust)}
+.cx .ecc-offer-dialog .ecc-button{background:var(--bone);color:var(--ink);border:0;border-radius:99px;min-height:50px;padding:0 24px;font:500 15px "Inter Tight",sans-serif;cursor:pointer}
+.cx .ecc-offer-dialog .ecc-button:hover{background:var(--rust);color:var(--bone)}
+.cx .ecc-dialog-close{color:var(--bone)!important;border:0!important}
+.cx .ecc-skip-offer{color:var(--mute)!important}
+body:has(.cx) .ecc-cookie-notice{background:#151613;color:var(--bone,#ece7df);border:1px solid rgba(236,231,223,.16);border-radius:10px;box-shadow:0 20px 60px rgba(0,0,0,.5);font-family:"Inter Tight",sans-serif}
+body:has(.cx) .ecc-cookie-notice p{color:#b6b0a6}
+body:has(.cx) .ecc-cookie-notice a{color:#ece7df}
+body:has(.cx) .ecc-cookie-notice input[type=checkbox]{accent-color:#b8542c}
+body:has(.cx) .ecc-consent-buttons button{background:transparent;color:#ece7df;border:1px solid rgba(236,231,223,.25);border-radius:99px;padding:10px 16px;font:500 13px "Inter Tight",sans-serif;cursor:pointer}
+body:has(.cx) .ecc-consent-buttons button:last-child{background:#ece7df;color:#0d0e0c;border-color:#ece7df}
+body:has(.cx) .ecc-consent-buttons button:hover{border-color:#b8542c}
+body:has(.cx) .ecc-cookie-settings{background:rgba(13,14,12,.75);color:#cfc9bf;border:1px solid rgba(236,231,223,.18);backdrop-filter:blur(8px);font-family:"Inter Tight",sans-serif}
