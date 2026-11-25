@@ -139,3 +139,11 @@ Updated 2026-11-03 (America/Chicago).
    payment policy is confirmed. Do not enable live collection.
 4. Preserve/export Railway data through a no-cost support path before the
    reported deletion deadline.
+
+## Redesign branch `redesign/cinematic-reel` (2026-11-25)
+
+- New cinematic home page: full-screen video reel of cleaners at work, service index with hover video, sticky process, property-team/partner cards, FAQ, video contact band. Files: `web/app/page.tsx`, `web/app/cinema.css`, `web/components/{HeroReel,ServiceIndex,CinemaEffects}.tsx`, `web/lib/reel.ts`.
+- SEO kept and extended: absolute title, keyword set, Organization/WebSite/FAQPage JSON-LD with per-service Offer provider/areaServed. No loader screen on production (protects LCP).
+- Footage: Mixkit free stock clips hotlinked from assets.mixkit.co with `/gallery` posters; labeled as stock in the footer. Self-host under `/public/video` before launch.
+- Not yet run in this branch: `npm run typecheck`, `build:vinext`, deploy. Owner approval required before merge/deploy.
+- Mail: Zoho MX records still published while Zoho is dropped; planned fix is Cloudflare Email Routing to the business Gmail plus Gmail "Send mail as" over smtp.resend.com (needs owner approval).
