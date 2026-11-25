@@ -151,3 +151,20 @@ body:has(.cx) .ecc-consent-buttons button{background:transparent;color:#ece7df;b
 body:has(.cx) .ecc-consent-buttons button:last-child{background:#ece7df;color:#0d0e0c;border-color:#ece7df}
 body:has(.cx) .ecc-consent-buttons button:hover{border-color:#b8542c}
 body:has(.cx) .ecc-cookie-settings{background:rgba(13,14,12,.75);color:#cfc9bf;border:1px solid rgba(236,231,223,.18);backdrop-filter:blur(8px);font-family:"Inter Tight",sans-serif}
+/* ---- Before & after gallery (homepage, cinematic theme) ---- */
+.cx-ba{border-top:1px solid var(--line)}
+.cx-ba-head{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:40px;align-items:end;margin-bottom:44px}
+.cx-ba-head>p{color:var(--mute);max-width:420px;margin:0;justify-self:end}
+.cx-ba-tabs{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:28px}
+.cx-ba-tabs button{min-height:44px;padding:0 20px;border-radius:99px;border:1px solid var(--line);background:transparent;color:var(--bone);font:500 14px "Inter Tight",sans-serif;cursor:pointer;transition:background .3s,border-color .3s,color .3s}
+.cx-ba-tabs button:hover{border-color:var(--rust)}
+.cx-ba-tabs button[aria-pressed=true]{background:var(--bone);color:var(--ink);border-color:var(--bone)}
+.cx-ba-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
+.cx-ba-grid figure{margin:0}
+.cx-ba-img{position:relative;aspect-ratio:4/3;border-radius:8px;overflow:hidden;background:#151613}
+.cx-ba-photo{object-fit:cover;filter:saturate(.92) contrast(1.04)}
+.cx-ba-img span{position:absolute;left:16px;top:16px;padding:8px 16px;border-radius:99px;background:rgba(13,14,12,.72);backdrop-filter:blur(8px);color:var(--bone);font:500 13px "Inter Tight",sans-serif;border:1px solid var(--line)}
+.cx-ba-img span.after{background:var(--rust);border-color:var(--rust)}
+.cx-ba-grid figcaption{padding:14px 2px 0;color:var(--mute);font-size:14px}
+.cx-ba-sum{margin:26px 0 0;color:var(--mute);font-size:15px;max-width:720px}
+@media(max-width:760px){.cx-ba-head{grid-template-columns:1fr}.cx-ba-head>p{justify-self:start}.cx-ba-grid{grid-template-columns:1fr}}
