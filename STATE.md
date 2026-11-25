@@ -144,6 +144,6 @@ Updated 2026-11-03 (America/Chicago).
 
 - New cinematic home page: full-screen video reel of cleaners at work, service index with hover video, sticky process, property-team/partner cards, FAQ, video contact band. Files: `web/app/page.tsx`, `web/app/cinema.css`, `web/components/{HeroReel,ServiceIndex,CinemaEffects}.tsx`, `web/lib/reel.ts`.
 - SEO kept and extended: absolute title, keyword set, Organization/WebSite/FAQPage JSON-LD with per-service Offer provider/areaServed. No loader screen on production (protects LCP).
-- Footage: Mixkit free stock clips hotlinked from assets.mixkit.co with `/gallery` posters; labeled as stock in the footer. Self-host under `/public/video` before launch.
+- Footage: Pexels + Mixkit free stock, color-graded and self-hosted in `web/public/video` (11 MB, landscape + portrait hero variants, posters). Sources in `web/public/video/SOURCES.md`. New share image `web/public/og-cinematic.jpg`.
 - Not yet run in this branch: `npm run typecheck`, `build:vinext`, deploy. Owner approval required before merge/deploy.
 - Mail: Zoho MX records still published while Zoho is dropped; planned fix is Cloudflare Email Routing to the business Gmail plus Gmail "Send mail as" over smtp.resend.com (needs owner approval).

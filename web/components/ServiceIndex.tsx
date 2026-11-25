@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
-import { services, clip } from '@/lib/reel';
+import { services } from '@/lib/reel';
 
 export default function ServiceIndex() {
   const peek = useRef<HTMLDivElement>(null);
@@ -16,26 +16,24 @@ export default function ServiceIndex() {
     return () => { removeEventListener('pointermove', move); cancelAnimationFrame(raf); };
   }, []);
 
-  function enter(id: number) {
+  function enter(src: string, poster: string) {
     const v = peekVideo.current; if (!v) return;
-    const { hd, sd } = clip(id);
-    v.innerHTML = `<source src="${hd}" type="video/mp4"><source src="${sd}" type="video/mp4">`;
-    v.load(); v.play().catch(() => {}); setShow(true);
+    if (v.getAttribute('src') !== src) { v.poster = poster; v.src = src; }
+    v.play().catch(() => {}); setShow(true);
   }
 
   return <>
     <ul className="cx-svc">
       {services.map((s, i) => {
-        const { hd, sd } = clip(s.video);
-        return <li key={s.slug}><a href={`/services/${s.slug}`} onPointerEnter={() => enter(s.video)} onPointerLeave={() => setShow(false)}>
+        return <li key={s.slug}><a href={`/services/${s.slug}`} onPointerEnter={() => enter(s.media.src, s.media.poster)} onPointerLeave={() => setShow(false)}>
           <span className="cx-n">0{i + 1}</span>
           <h3>{s.lead} <em>{s.accent}</em></h3>
           <span className="cx-d">{s.text}</span>
           <span className="cx-arr" aria-hidden="true">→</span>
-          <span className="cx-thumb" aria-hidden="true"><video data-lazy muted loop playsInline preload="none"><source src={hd} type="video/mp4" /><source src={sd} type="video/mp4" /></video></span>
+          <span className="cx-thumb" aria-hidden="true"><video data-lazy muted loop playsInline preload="none" poster={s.media.poster} src={s.media.src} /></span>
         </a></li>;
       })}
     </ul>
-    <div ref={peek} className={`cx-peek${show ? ' show' : ''}`} aria-hidden="true"><video ref={peekVideo} muted loop playsInline /></div>
+    <div ref={peek} className={`cx-peek${show ? ' show' : ''}`} aria-hidden="true"><video ref={peekVideo} muted loop playsInline preload="none" /></div>
   </>;
 }

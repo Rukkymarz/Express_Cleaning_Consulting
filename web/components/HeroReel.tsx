@@ -33,9 +33,9 @@ export default function HeroReel() {
 
   return <section className="cx-hero" aria-label="Professional cleaners at work">
     <div className="cx-reel">
-      {heroClips.map((c, i) => <div key={c.id} className={`cx-slide${i === active ? ' on' : ''}${i === prev ? ' off' : ''}`}>
-        <video ref={el => { videos.current[i] = el; }} muted loop playsInline autoPlay={i === 0} preload={i === 0 ? 'auto' : 'none'} poster={c.poster} aria-label={c.alt}>
-          <source src={c.hd} type="video/mp4" /><source src={c.sd} type="video/mp4" />
+      {heroClips.map((c, i) => <div key={c.key} className={`cx-slide${i === active ? ' on' : ''}${i === prev ? ' off' : ''}`}>
+        <video ref={el => { videos.current[i] = el; }} muted loop playsInline autoPlay={i === 0} preload={i === 0 ? 'auto' : 'none'} poster={c.wide.poster} aria-label={c.alt}>
+          <source src={c.tall.src} type="video/mp4" media="(max-aspect-ratio: 4/5)" /><source src={c.wide.src} type="video/mp4" />
         </video>
       </div>)}
     </div>
@@ -55,7 +55,7 @@ export default function HeroReel() {
           <span className="cx-idx">{String(active + 1).padStart(2, '0')}</span>
           <span aria-live="polite">{heroClips[active].caption}</span>
           <div className="cx-bars" style={{ ['--dur' as string]: `${DURATION}ms` }}>
-            {heroClips.map((c, i) => <button key={`${c.id}-${i === active ? active : 'x'}`} type="button" aria-label={`Show clip ${i + 1}: ${c.caption}`} className={i === active ? 'on' : i < active ? 'done' : ''} onClick={() => go(i)} />)}
+            {heroClips.map((c, i) => <button key={`${c.key}-${i === active ? active : 'x'}`} type="button" aria-label={`Show clip ${i + 1}: ${c.caption}`} className={i === active ? 'on' : i < active ? 'done' : ''} onClick={() => go(i)} />)}
           </div>
         </div>
       </div>

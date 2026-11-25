@@ -10,7 +10,7 @@ import { publishedProjectPairs } from '@/lib/gallery';
 import { serviceGuides } from '@/lib/services';
 import { faqs, guarantee, contact } from '@/lib/launch';
 import { instagramUrl, facebookUrl } from '@/lib/social';
-import { clip } from '@/lib/reel';
+import { media } from '@/lib/reel';
 
 const site = 'https://www.expresscleaningconsult.com';
 const description = 'Free online quotes for house, deep, office, move-out, Airbnb turnover and post-construction cleaning nationwide, done by vetted local partner crews.';
@@ -20,7 +20,7 @@ export const metadata: Metadata = {
   description,
   keywords: ['free cleaning quote', 'house cleaning services', 'deep cleaning', 'office janitorial cleaning', 'Airbnb turnover cleaning', 'move-in move-out cleaning', 'post construction cleaning', 'pressure washing services', 'junk removal services', 'nationwide cleaning services', 'apartment turnover cleaning', 'local cleaning company'],
   alternates: { canonical: '/' },
-  openGraph: { type: 'website', url: '/', title: 'Spotless, in motion | Express Cleaning Consult', description, images: [{ url: '/gallery/bedroom-after.webp', alt: 'Express Cleaning Consult real project result' }], siteName: 'Express Cleaning Consult' },
+  openGraph: { type: 'website', url: '/', title: 'Spotless, in motion | Express Cleaning Consult', description, images: [{ url: '/og-cinematic.jpg', width: 1200, height: 630, alt: 'Express Cleaning Consult: Spotless, in motion' }], siteName: 'Express Cleaning Consult' },
 };
 
 const structuredData = { '@context': 'https://schema.org', '@graph': [
@@ -47,9 +47,8 @@ const promises = [
 function Brand() {
   return <a href="/" className="cx-brand" aria-label="Express Cleaning Consult home"><b>EXPRESS</b><small>CLEANING CONSULT</small><i /><i /></a>;
 }
-function bg(id: number) {
-  const { hd, sd } = clip(id);
-  return <video data-lazy muted loop playsInline preload="none" aria-hidden="true"><source src={hd} type="video/mp4" /><source src={sd} type="video/mp4" /></video>;
+function bg(m: { src: string; poster: string }) {
+  return <video data-lazy muted loop playsInline preload="none" aria-hidden="true" poster={m.poster} src={m.src} />;
 }
 
 export default function Home() {
@@ -97,10 +96,10 @@ export default function Home() {
       <section id="teams" className="cx-section"><div className="cx-wrap">
         <div className="cx-reveal cx-gap"><p className="cx-kicker">Built for scale</p><h2>One contact.<br /><em>Every turnover.</em></h2></div>
         <div className="cx-aud">
-          <article className="cx-card cx-reveal">{bg(34661)}
+          <article className="cx-card cx-reveal">{bg(media.property)}
             <h3>Property managers &amp; hosts</h3><p>Unit resets, Airbnb turnovers, rush requests and overflow coverage under one vendor relationship.</p>
             <div className="cx-links"><a className="cx-btn" href="/property-managers">Request vendor setup</a></div></article>
-          <article className="cx-card cx-reveal">{bg(45040)}
+          <article className="cx-card cx-reveal">{bg(media.partner)}
             <h3>Partner cleaners</h3><p>Independent cleaners and crews: join our network and receive quoted, scoped jobs in your area.</p>
             <div className="cx-links"><a className="cx-btn" href="/partner-cleaners">Become a partner</a><a className="cx-btn ghost" href="/refer-a-client">Refer a client</a></div></article>
         </div>
@@ -112,7 +111,7 @@ export default function Home() {
         <div>{faqs.map(([q, a]) => <details key={q} className="cx-reveal"><summary>{q}<span aria-hidden="true">+</span></summary><p>{a}</p></details>)}</div>
       </div></section>
 
-      <section id="contact" className="cx-contact">{bg(48835)}<div className="cx-wrap cx-reveal">
+      <section id="contact" className="cx-contact">{bg(media.contact)}<div className="cx-wrap cx-reveal">
         <p className="cx-kicker cx-center">Make room for a fresh start</p>
         <h2>Let’s make it<br /><em>spotless.</em></h2>
         <div className="cx-row"><a className="cx-btn" data-mag href="/book">Get a free quote</a><a className="cx-btn ghost" href={`tel:${contact.phone}`}>Call {contact.displayPhone}</a></div>
@@ -128,7 +127,7 @@ export default function Home() {
       </div>
       <div className="cx-giant" aria-hidden="true">Express Cleaning</div>
       <div className="cx-fbot"><span>© {new Date().getFullYear()} Express Cleaning Consult</span><span>Service is confirmed based on local crew availability · <a href="/privacy">Privacy Policy</a> · <a href="/terms">Terms</a></span></div>
-      <p className="cx-credit">Background footage: free stock clips (Mixkit), shown for illustration. Project photos supplied by Express Cleaning Consult.</p>
+      <p className="cx-credit">Background footage: free stock clips (Pexels, Mixkit), color-graded and shown for illustration. Project photos supplied by Express Cleaning Consult.</p>
     </div></footer>
     <div className="ecc-home cx-legacy-tools"><WebsiteTools /><WelcomeOffer /></div>
   </div>;
